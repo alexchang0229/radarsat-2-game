@@ -19,7 +19,7 @@ export function createScene(canvas) {
   scene.clearColor = new Color3(0.02, 0.02, 0.05); // Dark space background
 
   // Camera - positioned to look down the track for vanishing point effect
-  const camera = new FreeCamera('camera', new Vector3(40, 20, 20), scene);
+  const camera = new FreeCamera('camera', new Vector3(30, 15, 15), scene);
   camera.setTarget(new Vector3(0, 0, -5));
   camera.fov = 1.0; // ~50 degrees in radians
 

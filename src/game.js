@@ -21,7 +21,7 @@ export class Game {
 
     // Game state
     this.tiles = [];
-    this.spawner = new TileSpawner(-50, 1.5, this.tileSpeed); // spawnZ, spawnInterval, tileSpeed
+    this.spawner = new TileSpawner(0, 1.5, this.angularVelocity); // initialSpawnTheta, spawnInterval, angularVelocity
     this.score = 0;
     this.gameOver = false;
     this.isHitting = false; // Track if spacebar is held
@@ -86,6 +86,7 @@ export class Game {
       this.updateHitDetection();
     }
 
+
     // Check tile positions and update hit progress
     for (let i = this.tiles.length - 1; i >= 0; i--) {
       const tile = this.tiles[i];
@@ -124,7 +125,6 @@ export class Game {
   }
 
   onHitStart() {
-    console.log(this.tiles.slice(-1)[0].mesh.getAbsolutePosition())
     this.isHitting = true;
     // Change target zone to red while hitting
     this.targetZone.material.diffuseColor = new Color3(1, 0, 0);

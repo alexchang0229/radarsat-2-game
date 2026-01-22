@@ -11,15 +11,16 @@ const COLUMN_POSITIONS = [-2.25, -0.75, 0.75, 2.25]; // 4 columns
 const SPHERE_RADIUS = 300;
 
 export class Tile {
-  constructor(column, spawnZ, scene, ground) {
+  constructor(column, spawnTheta, scene, ground) {
     this.column = column;
     this.clickable = true;
     this.scene = scene;
+    this.spawnTheta = spawnTheta
     this.ground = ground;
     this.TILE_WIDTH = 1.5;
     // Random tile depth between 2 and 6 units
     this.TILE_DEPTH = 2 + Math.random() * 4;
-    this.mesh = this.createMesh(column, spawnZ);
+    this.mesh = this.createMesh(column, spawnTheta);
     this.hitProgress = 0; // 0 to 1, tracks how much of tile has been hit
     this.isBeingHit = false;
     this.scored = false; // Track if score has been awarded
@@ -37,7 +38,7 @@ export class Tile {
     };
   }
 
-  createMesh(column, z) {
+  createMesh(column, spawnTheta) {
     const mesh = MeshBuilder.CreatePlane(
       "tile",
       { width: this.TILE_WIDTH, height: this.TILE_DEPTH },
@@ -51,21 +52,22 @@ export class Tile {
     material.backFaceCulling = false;
     mesh.material = material;
 
-    // Position tile on sphere surface
+    // Position tile on sphere surface using spherical coordinates
+    // Theta is 90 degrees (PI/2) ahead of player, measured from sphere's rotation
+    // Y = R * sin(theta), Z = R * cos(theta)
     const x = COLUMN_POSITIONS[column];
-    const distFromCenter = Math.sqrt(x * x + z * z);
-    const yOffset = Math.sqrt(
-      Math.max(
-        0,
-        SPHERE_RADIUS * SPHERE_RADIUS - distFromCenter * distFromCenter
-      )
-    );
 
-    // Position relative to sphere center
-    mesh.position = new Vector3(x, yOffset, z);
+    // Calculate theta: start at 90 degrees (PI/2) ahead, plus the spawn offset
+    // spawnTheta is the additional angle offset for progressive spawning
+    const theta = spawnTheta + 120 * Math.PI / 180
 
-    // Calculate surface normal (direction from sphere center to tile)
-    const surfaceNormal = new Vector3(x, yOffset, z).normalize();
+    // Spherical coordinates: Y and Z on the sphere surface
+    // Account for x offset by reducing the effective radius in the YZ plane
+    const effectiveRadius = Math.sqrt(SPHERE_RADIUS * SPHERE_RADIUS - x * x);
+    const y = effectiveRadius * Math.sin(theta);
+    const z = effectiveRadius * Math.cos(theta);
+    // Position relative to sphere center (sphere is centered at origin)
+    mesh.position = new Vector3(x, y, z);
 
     // Make tile face outward from sphere (point toward camera)
     // lookAt makes the -Z axis point toward the target, so we look away from center
@@ -168,11 +170,11 @@ export class Tile {
 }
 
 export class TileSpawner {
-  constructor(spawnZ = -50, spawnInterval = 1.5, tileSpeed = 15) {
-    this.initialSpawnZ = spawnZ;
-    this.currentSpawnZ = spawnZ;
+  constructor(initialSpawnTheta = 0, spawnInterval = 1.5, angularVelocity = 0.0167) {
+    this.initialSpawnTheta = initialSpawnTheta; // Starting angle offset (radians)
+    this.currentSpawnTheta = initialSpawnTheta;
     this.spawnInterval = spawnInterval;
-    this.tileSpeed = tileSpeed;
+    this.angularVelocity = angularVelocity; // Radians per second (matches sphere rotation)
     this.timeSinceLastSpawn = 0;
   }
 
@@ -182,12 +184,12 @@ export class TileSpawner {
     if (this.timeSinceLastSpawn >= this.spawnInterval) {
       this.timeSinceLastSpawn = 0;
 
-      // Spawn tile at current position
+      // Spawn tile at current theta position
       const tile = this.spawnTile(scene, ground);
 
-      // Move spawn position further back for next tile
-      // Distance = speed × time between spawns
-      this.currentSpawnZ -= this.tileSpeed * this.spawnInterval;
+      // Move spawn angle further ahead for next tile
+      // Angular distance = angular velocity × time between spawns
+      this.currentSpawnTheta += this.angularVelocity * this.spawnInterval;
 
       return tile;
     }
@@ -196,11 +198,11 @@ export class TileSpawner {
 
   spawnTile(scene, ground) {
     const column = Math.floor(Math.random() * 4);
-    return new Tile(column, this.currentSpawnZ, scene, ground);
+    return new Tile(column, this.currentSpawnTheta, scene, ground);
   }
 
   reset() {
-    this.currentSpawnZ = this.initialSpawnZ;
+    this.currentSpawnTheta = this.initialSpawnTheta;
     this.timeSinceLastSpawn = 0;
   }
 }
