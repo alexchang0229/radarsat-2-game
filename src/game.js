@@ -86,11 +86,13 @@ export class Game {
       this.updateHitDetection();
     }
 
-
     // Check tile positions and update hit progress
     for (let i = this.tiles.length - 1; i >= 0; i--) {
       const tile = this.tiles[i];
       const absolutePos = tile.mesh.getAbsolutePosition();
+
+      // Update tile age
+      tile.updateAge(deltaTime);
 
       // Update hit progress for tiles being hit
       if (tile.isBeingHit) {
@@ -104,16 +106,15 @@ export class Game {
         this.updateScore();
       }
 
-      // Check if tile passed bottom (miss condition)
-      if (tile.clickable && absolutePos.z > this.bottomThreshold) {
-        this.onMiss();
-        return;
-      }
-
-      // Remove tiles that are too close/behind camera
-      if (absolutePos.z > 10) {
+      // Remove tiles after they've rotated 20 degrees (based on age and rotation rate)
+      const rotationAngleDegrees = (tile.age * this.angularVelocity * 180) / Math.PI;
+      if (rotationAngleDegrees > 30) {
         tile.dispose();
         this.tiles.splice(i, 1);
+        if (tile.clickable) {
+          this.onMiss();
+          return;
+        }
       }
     }
   }

@@ -24,6 +24,7 @@ export class Tile {
     this.hitProgress = 0; // 0 to 1, tracks how much of tile has been hit
     this.isBeingHit = false;
     this.scored = false; // Track if score has been awarded
+    this.age = 0; // Track time since tile creation
 
     // Create progress overlay mesh for color swipe effect
     this.progressMesh = this.createProgressMesh();
@@ -159,6 +160,10 @@ export class Tile {
 
   hasScored() {
     return this.scored;
+  }
+
+  updateAge(deltaTime) {
+    this.age += deltaTime;
   }
 
   dispose() {
