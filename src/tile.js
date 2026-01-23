@@ -25,9 +25,6 @@ export class Tile {
     this.isBeingHit = false;
     this.scored = false; // Track if score has been awarded
     this.age = 0; // Track time since tile creation
-
-    // Create progress overlay mesh for color swipe effect
-    this.progressMesh = this.createProgressMesh();
   }
 
   getZBounds() {
@@ -64,7 +61,7 @@ export class Tile {
 
     // Spherical coordinates: Y and Z on the sphere surface
     // Account for x offset by reducing the effective radius in the YZ plane
-    const effectiveRadius = Math.sqrt(SPHERE_RADIUS ** 2 - x ** 2);
+    const effectiveRadius = Math.sqrt(SPHERE_RADIUS ** 2 - x ** 2) - 0.1;
     const y = effectiveRadius * Math.sin(theta);
     const z = effectiveRadius * Math.cos(theta);
     // Position relative to sphere center (sphere is centered at origin)
@@ -74,32 +71,6 @@ export class Tile {
 
     // Parent to ground sphere so it rotates with the sphere
     mesh.parent = this.ground;
-
-    return mesh;
-  }
-
-  createProgressMesh() {
-    // Create a thin overlay mesh that will grow to show hit progress
-    const mesh = MeshBuilder.CreatePlane(
-      "tileProgress",
-      { width: this.TILE_WIDTH, height: this.TILE_DEPTH },
-      this.scene
-    );
-
-    const material = new StandardMaterial("progressMaterial", this.scene);
-    material.diffuseColor = new Color3(0, 1, 0); // Green for progress
-    material.emissiveColor = new Color3(0, 0.6, 0);
-    material.backFaceCulling = false;
-    mesh.material = material;
-
-    // Parent to the tile mesh so it moves with it
-    mesh.parent = this.mesh;
-    // Position slightly in front of tile to avoid z-fighting
-    mesh.position = new Vector3(0, 0, 0.01);
-    // Start with zero height (invisible)
-    mesh.scaling.y = 0;
-    // Position pivot at back edge (negative Y in local space)
-    mesh.setPivotPoint(new Vector3(0, this.TILE_DEPTH / 2, 0));
 
     return mesh;
   }
@@ -123,9 +94,6 @@ export class Tile {
     const progressPerSecond = tileSpeed / this.TILE_DEPTH;
     this.hitProgress += deltaTime * progressPerSecond;
 
-    // Color swipe effect: grow the progress overlay from back to front
-    this.progressMesh.scaling.y = Math.min(this.hitProgress, 1);
-
     if (this.hitProgress >= 1) {
       this.completeHit();
     }
@@ -136,18 +104,15 @@ export class Tile {
     // In Guitar Hero, if you let go of a long note early, it "breaks"
     // We reset progress slightly to punish the player
     this.hitProgress = Math.max(0, this.hitProgress - 0.2);
-    // Update the progress mesh to reflect the penalty
-    this.progressMesh.scaling.y = this.hitProgress;
   }
 
   completeHit() {
     console.log("complete hit");
     this.clickable = false;
     this.isBeingHit = false;
-    // Hide progress mesh and make entire tile green
-    this.progressMesh.dispose();
-    this.mesh.material.diffuseColor = new Color3(0, 1, 0);
-    this.mesh.material.emissiveColor = new Color3(0, 0.8, 0);
+    // Make entire tile green when completed
+    // this.mesh.material.diffuseColor = new Color3(0, 1, 0);
+    // this.mesh.material.emissiveColor = new Color3(0, 0.8, 0);
   }
 
   isFullyHit() {
@@ -163,9 +128,6 @@ export class Tile {
   }
 
   dispose() {
-    if (this.progressMesh) {
-      this.progressMesh.dispose();
-    }
     this.mesh.dispose();
   }
 }

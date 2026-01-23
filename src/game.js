@@ -15,7 +15,7 @@ export class Game {
     this.ground = ground;
 
     // Game parameters
-    this.tileSpeed = 20; // Units per second (linear velocity)
+    this.tileSpeed = 10; // Units per second (linear velocity)
     this.sphereRadius = 300; // Sphere radius
     this.angularVelocity = this.tileSpeed / this.sphereRadius; // Radians per second
     this.bottomThreshold = 8; // Z position where tiles are "missed"
@@ -88,8 +88,8 @@ export class Game {
       this.trailSpawner.createTrail(this.targetZone.position.x, this.ground.rotation.x, this.scene, this.ground);
     }
 
-    // Update trails (removes old ones)
-    this.trailSpawner.update(deltaTime, this.angularVelocity);
+    // Update trails (removes old ones, highlights overlapping with tiles)
+    this.trailSpawner.update(deltaTime, this.angularVelocity, this.tiles);
 
     // Check tile positions and update hit progress
     for (let i = this.tiles.length - 1; i >= 0; i--) {
