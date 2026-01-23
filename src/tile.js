@@ -64,7 +64,7 @@ export class Tile {
 
     // Spherical coordinates: Y and Z on the sphere surface
     // Account for x offset by reducing the effective radius in the YZ plane
-    const effectiveRadius = Math.sqrt(SPHERE_RADIUS * SPHERE_RADIUS - x * x);
+    const effectiveRadius = Math.sqrt(SPHERE_RADIUS ** 2 - x ** 2);
     const y = effectiveRadius * Math.sin(theta);
     const z = effectiveRadius * Math.cos(theta);
     // Position relative to sphere center (sphere is centered at origin)
@@ -175,9 +175,8 @@ export class Tile {
 }
 
 export class TileSpawner {
-  constructor(initialSpawnTheta = 0, spawnInterval = 1.5, angularVelocity = 0.0167) {
-    this.initialSpawnTheta = initialSpawnTheta; // Starting angle offset (radians)
-    this.currentSpawnTheta = initialSpawnTheta;
+  constructor(spawnInterval = 1.5, angularVelocity = 0.0167) {
+    this.currentSpawnTheta = 0;
     this.spawnInterval = spawnInterval;
     this.angularVelocity = angularVelocity; // Radians per second (matches sphere rotation)
     this.timeSinceLastSpawn = 0;
@@ -207,7 +206,7 @@ export class TileSpawner {
   }
 
   reset() {
-    this.currentSpawnTheta = this.initialSpawnTheta;
+    this.currentSpawnTheta = 0;
     this.timeSinceLastSpawn = 0;
   }
 }

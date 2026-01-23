@@ -21,7 +21,7 @@ export class Game {
 
     // Game state
     this.tiles = [];
-    this.spawner = new TileSpawner(0, 1.5, this.angularVelocity); // initialSpawnTheta, spawnInterval, angularVelocity
+    this.spawner = new TileSpawner(1.5, this.angularVelocity);// spawnInterval, angularVelocity
     this.score = 0;
     this.gameOver = false;
     this.isHitting = false; // Track if spacebar is held
@@ -89,7 +89,6 @@ export class Game {
     // Check tile positions and update hit progress
     for (let i = this.tiles.length - 1; i >= 0; i--) {
       const tile = this.tiles[i];
-      const absolutePos = tile.mesh.getAbsolutePosition();
 
       // Update tile age
       tile.updateAge(deltaTime);
