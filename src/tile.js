@@ -70,11 +70,7 @@ export class Tile {
     // Position relative to sphere center (sphere is centered at origin)
     mesh.position = new Vector3(x, y, z);
 
-    // Make tile face outward from sphere (point toward camera)
-    // lookAt makes the -Z axis point toward the target, so we look away from center
-    const centerPoint = new Vector3(0, 0, 0);
-    mesh.lookAt(centerPoint);
-    mesh.rotate(Vector3.Up(), Math.PI); // Flip 180 degrees to face outward
+    mesh.rotation.x = -theta; // Flip 180 degrees to face outward
 
     // Parent to ground sphere so it rotates with the sphere
     mesh.parent = this.ground;

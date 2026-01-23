@@ -5,6 +5,7 @@ import {
   Vector3,
 } from "@babylonjs/core";
 import { TileSpawner } from "./tile.js";
+import { TrailSpawner } from "./trail.js";
 
 export class Game {
   constructor(scene, camera, engine, ground) {
@@ -21,7 +22,8 @@ export class Game {
 
     // Game state
     this.tiles = [];
-    this.spawner = new TileSpawner(1.5, this.angularVelocity);// spawnInterval, angularVelocity
+    this.spawner = new TileSpawner(1.5, this.angularVelocity);
+    this.trailSpawner = new TrailSpawner();
     this.score = 0;
     this.gameOver = false;
     this.isHitting = false; // Track if spacebar is held
@@ -69,7 +71,6 @@ export class Game {
 
   update() {
     if (this.gameOver) return;
-
     const deltaTime = this.engine.getDeltaTime() / 1000; // Convert ms to seconds
 
     // Rotate the sphere to bring tiles forward (player flying toward tiles)
@@ -84,7 +85,11 @@ export class Game {
     // If spacebar is held, check for tile overlaps and update hit progress
     if (this.isHitting) {
       this.updateHitDetection();
+      this.trailSpawner.createTrail(this.targetZone.position.x, this.ground.rotation.x, this.scene, this.ground);
     }
+
+    // Update trails (removes old ones)
+    this.trailSpawner.update(deltaTime, this.angularVelocity);
 
     // Check tile positions and update hit progress
     for (let i = this.tiles.length - 1; i >= 0; i--) {
@@ -105,7 +110,7 @@ export class Game {
         this.updateScore();
       }
 
-      // Remove tiles after they've rotated 20 degrees (based on age and rotation rate)
+      // Remove tiles after they've rotated 30 degrees (based on age and rotation rate)
       const rotationAngleDegrees = (tile.age * this.angularVelocity * 180) / Math.PI;
       if (rotationAngleDegrees > 30) {
         tile.dispose();
@@ -209,8 +214,9 @@ export class Game {
     // Reset sphere rotation
     this.ground.rotation.x = 0;
 
-    // Reset spawner
+    // Reset spawners
     this.spawner.reset();
+    this.trailSpawner.reset();
   }
 
   getTargetZone() {
