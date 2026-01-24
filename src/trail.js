@@ -6,7 +6,8 @@ import {
 } from "@babylonjs/core";
 
 const SPHERE_RADIUS = 300;
-const TRAIL_WIDTH = 1.5;
+export const TRAIL_WIDTH = 1.6;
+export const TRAIL_HEIGHT = 0.17;
 const TILE_WIDTH = 1.5;
 
 const TRAIL_COLOR_NORMAL = new Color3(1, 0.67, 0); // Orange
@@ -28,7 +29,7 @@ export class Trail {
   createMesh(x, theta) {
     const mesh = MeshBuilder.CreatePlane(
       "trail",
-      { width: TRAIL_WIDTH, height: 0.4 },
+      { width: TRAIL_WIDTH, height: TRAIL_HEIGHT },
       this.scene
     );
 
@@ -78,7 +79,7 @@ export class Trail {
     // Create highlight mesh only for the overlapping portion
     this.highlightMesh = MeshBuilder.CreatePlane(
       "trailHighlight",
-      { width: overlapWidth, height: 0.4 },
+      { width: overlapWidth, height: TRAIL_HEIGHT },
       this.scene
     );
 
@@ -151,6 +152,8 @@ export class TrailSpawner {
 
           if (trailInTile && xOverlap) {
             trail.setHighlighted(tilePos.x);
+            // Add this trail's coverage to the tile
+            tile.addTrailCoverage(trail.x, TRAIL_WIDTH, TRAIL_HEIGHT);
             break;
           }
         }

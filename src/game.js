@@ -4,6 +4,7 @@ import {
   Color3,
   Vector3,
 } from "@babylonjs/core";
+import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
 import { TileSpawner } from "./tile.js";
 import { TrailSpawner } from "./trail.js";
 
@@ -27,7 +28,6 @@ export class Game {
     this.score = 0;
     this.gameOver = false;
     this.isHitting = false; // Track if spacebar is held
-    this.currentHitTile = null; // Track which tile is currently being hit
 
     // Create target zone
     this.targetZone = this.createTargetZone();
@@ -41,12 +41,9 @@ export class Game {
 
     this.restartButton.addEventListener("click", () => this.restart());
 
-    // Z: along track, X: cross track
-    this.zHitRange = 2
-    this.xHitRange = 1
-
-    this.BLUE_START = new Color3(0.3, 0.5, 0.9);
-    this.GREEN_END = new Color3(0, 1, 0);
+    // GUI for percentage flashes
+    this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
+    this.activeFlashes = []; // Track active flash animations
   }
 
   createTargetZone() {
@@ -82,31 +79,32 @@ export class Game {
       this.tiles.push(newTile);
     }
 
-    // If spacebar is held, check for tile overlaps and update hit progress
+    // If spacebar is held, create trails
     if (this.isHitting) {
-      this.updateHitDetection();
       this.trailSpawner.createTrail(this.targetZone.position.x, this.ground.rotation.x, this.scene, this.ground);
     }
 
-    // Update trails (removes old ones, highlights overlapping with tiles)
+    // Update trails (removes old ones, highlights overlapping with tiles, adds coverage)
     this.trailSpawner.update(deltaTime, this.angularVelocity, this.tiles);
 
-    // Check tile positions and update hit progress
+    // Update flash animations
+    this.updateFlashes(deltaTime);
+
+    // Check tile positions and coverage
     for (let i = this.tiles.length - 1; i >= 0; i--) {
       const tile = this.tiles[i];
 
       // Update tile age
       tile.updateAge(deltaTime);
 
-      // Update hit progress for tiles being hit
-      if (tile.isBeingHit) {
-        tile.updateHit(deltaTime, this.tileSpeed);
-      }
+      // Check if tile just passed the target zone
+      if (tile.checkPassedTarget()) {
+        // Tile just passed - show percentage flash
+        const percent = tile.getCoveragePercent();
+        this.showPercentageFlash(tile, percent);
 
-      // Award score when tile is fully hit (only once)
-      if (tile.isFullyHit() && !tile.hasScored()) {
-        tile.scored = true; // Mark as scored
-        this.score++;
+        // Add to score based on coverage
+        this.score += Math.round(percent);
         this.updateScore();
       }
 
@@ -115,10 +113,6 @@ export class Game {
       if (rotationAngleDegrees > 30) {
         tile.dispose();
         this.tiles.splice(i, 1);
-        if (tile.clickable) {
-          this.onMiss();
-          return;
-        }
       }
     }
   }
@@ -141,42 +135,60 @@ export class Game {
     // Reset target zone color
     this.targetZone.material.diffuseColor = new Color3(1, 0.67, 0);
     this.targetZone.material.emissiveColor = new Color3(0.5, 0.33, 0);
-
-    // Stop hitting all tiles
-    for (const tile of this.tiles) {
-      if (tile.isBeingHit) {
-        tile.stopHit();
-      }
-    }
-    this.currentHitTile = null;
   }
 
-  updateHitDetection() {
-    // If we are already hitting a tile, keep hitting it
-    if (this.currentHitTile) {
-      return;
-    }
+  showPercentageFlash(tile, percent) {
+    const tilePos = tile.mesh.getAbsolutePosition();
 
-    // Look for a new tile to start hitting
-    for (const tile of this.tiles) {
-      if (!tile.clickable || tile.scored) continue;
+    // Create text block for the percentage
+    const textBlock = new TextBlock();
+    textBlock.text = `${Math.round(percent)}%`;
+    textBlock.color = percent >= 80 ? "lime" : percent >= 50 ? "yellow" : "red";
+    textBlock.fontSize = 48;
+    textBlock.fontWeight = "bold";
+    textBlock.outlineWidth = 2;
+    textBlock.outlineColor = "black";
 
-      const absolutePos = tile.mesh.getAbsolutePosition();
-      const xDist = Math.abs(absolutePos.x - this.targetZone.position.x);
+    this.guiTexture.addControl(textBlock);
 
-      // Get tile's Z bounds (front = closer to camera, back = farther)
-      const bounds = tile.getZBounds();
-      // Check if target zone Z is within tile's front and back edges (with tolerance)
-      const targetInTile = bounds.back <= 0 &&
-        bounds.front >= 0;
+    // Convert 3D position to screen position
+    const screenPos = Vector3.Project(
+      tilePos,
+      this.scene.getTransformMatrix(),
+      this.scene.getTransformMatrix(),
+      this.camera.viewport.toGlobal(
+        this.engine.getRenderWidth(),
+        this.engine.getRenderHeight()
+      )
+    );
 
-      // Must be in the Z-range AND the correct X-column
-      if (targetInTile && xDist < this.xHitRange) {
-        this.currentHitTile = tile;
-        if (!this.currentHitTile.isBeingHit) {
-          this.currentHitTile.startHit();
-        }
-        break;
+    // Position the text (GUI uses -1 to 1 coordinates from center)
+    textBlock.left = screenPos.x - this.engine.getRenderWidth() / 2;
+    textBlock.top = screenPos.y - this.engine.getRenderHeight() / 2;
+
+    // Track this flash for animation
+    this.activeFlashes.push({
+      textBlock,
+      age: 0,
+      duration: 1.0, // Flash lasts 1 second
+      startY: textBlock.top
+    });
+  }
+
+  updateFlashes(deltaTime) {
+    for (let i = this.activeFlashes.length - 1; i >= 0; i--) {
+      const flash = this.activeFlashes[i];
+      flash.age += deltaTime;
+
+      // Animate: float upward and fade out
+      const progress = flash.age / flash.duration;
+      flash.textBlock.top = flash.startY// Float up 50 pixels
+      flash.textBlock.alpha = 1 - progress; // Fade out
+
+      // Remove when done
+      if (flash.age >= flash.duration) {
+        this.guiTexture.removeControl(flash.textBlock);
+        this.activeFlashes.splice(i, 1);
       }
     }
   }
@@ -198,11 +210,16 @@ export class Game {
     });
     this.tiles = [];
 
+    // Clear any active flashes
+    for (const flash of this.activeFlashes) {
+      this.guiTexture.removeControl(flash.textBlock);
+    }
+    this.activeFlashes = [];
+
     // Reset game state
     this.score = 0;
     this.gameOver = false;
     this.isHitting = false;
-    this.currentHitTile = null;
     this.updateScore();
     this.gameOverElement.classList.add("hidden");
 

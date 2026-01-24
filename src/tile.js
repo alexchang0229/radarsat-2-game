@@ -15,16 +15,19 @@ export class Tile {
     this.column = column;
     this.clickable = true;
     this.scene = scene;
-    this.spawnTheta = spawnTheta
+    this.spawnTheta = spawnTheta;
     this.ground = ground;
     this.TILE_WIDTH = 1.5;
     // Random tile depth between 2 and 6 units
     this.TILE_DEPTH = 2 + Math.random() * 4;
     this.mesh = this.createMesh(column, spawnTheta);
-    this.hitProgress = 0; // 0 to 1, tracks how much of tile has been hit
-    this.isBeingHit = false;
-    this.scored = false; // Track if score has been awarded
     this.age = 0; // Track time since tile creation
+
+    // Coverage tracking - accumulates trail overlap area
+    this.totalCoverageArea = 0; // Total area covered by trails
+    this.tileArea = this.TILE_WIDTH * this.TILE_DEPTH; // Total tile area
+    this.hasPassedTarget = false; // Whether tile has completely passed target zone
+    this.coveragePercent = 0; // Final coverage percentage
   }
 
   getZBounds() {
@@ -34,6 +37,58 @@ export class Tile {
       front: z + halfDepth, // Leading edge (closest to bottom)
       back: z - halfDepth   // Trailing edge (farthest from bottom)
     };
+  }
+
+  getXBounds() {
+    const halfWidth = this.TILE_WIDTH / 2;
+    const x = this.mesh.getAbsolutePosition().x;
+    return {
+      left: x - halfWidth,
+      right: x + halfWidth
+    };
+  }
+
+  // Add coverage from a trail overlap
+  // trailX: center X position of trail
+  // trailWidth: width of the trail
+  // trailHeight: height of the trail segment
+  addTrailCoverage(trailX, trailWidth, trailHeight) {
+    if (this.hasPassedTarget) return;
+
+    // Calculate X overlap between trail and tile
+    const tileXBounds = this.getXBounds();
+    const trailLeft = trailX - trailWidth / 2;
+    const trailRight = trailX + trailWidth / 2;
+
+    const overlapLeft = Math.max(tileXBounds.left, trailLeft);
+    const overlapRight = Math.min(tileXBounds.right, trailRight);
+    const overlapWidth = Math.max(0, overlapRight - overlapLeft);
+
+    if (overlapWidth > 0) {
+      // Add the overlap area (width * height of trail segment)
+      const overlapArea = overlapWidth * trailHeight;
+      this.totalCoverageArea += overlapArea;
+    }
+  }
+
+  // Check if tile has completely passed the target zone (back edge past Z=0)
+  checkPassedTarget() {
+    if (this.hasPassedTarget) return false;
+
+    const bounds = this.getZBounds();
+    // Tile has passed when its back edge is past Z=0
+    if (bounds.back > 0) {
+      this.hasPassedTarget = true;
+      this.clickable = false;
+      // Calculate final coverage percentage (capped at 100%)
+      this.coveragePercent = Math.min(100, (this.totalCoverageArea / this.tileArea) * 100);
+      return true; // Just passed
+    }
+    return false;
+  }
+
+  getCoveragePercent() {
+    return this.coveragePercent;
   }
 
   createMesh(column, spawnTheta) {
@@ -73,54 +128,6 @@ export class Tile {
     mesh.parent = this.ground;
 
     return mesh;
-  }
-
-  isPassedBottom(threshold) {
-    return this.mesh.position.z > threshold;
-  }
-
-  startHit() {
-    if (!this.clickable) return false;
-    console.log("hit started");
-    this.isBeingHit = true;
-    return true;
-  }
-
-  updateHit(deltaTime, tileSpeed) {
-    if (!this.isBeingHit || !this.clickable) return;
-    // Progress based on how fast the tile moves relative to its depth
-    // Time to traverse tile = TILE_DEPTH / tileSpeed
-    // So progress per second = tileSpeed / TILE_DEPTH
-    const progressPerSecond = tileSpeed / this.TILE_DEPTH;
-    this.hitProgress += deltaTime * progressPerSecond;
-
-    if (this.hitProgress >= 1) {
-      this.completeHit();
-    }
-  }
-
-  stopHit() {
-    this.isBeingHit = false;
-    // In Guitar Hero, if you let go of a long note early, it "breaks"
-    // We reset progress slightly to punish the player
-    this.hitProgress = Math.max(0, this.hitProgress - 0.2);
-  }
-
-  completeHit() {
-    console.log("complete hit");
-    this.clickable = false;
-    this.isBeingHit = false;
-    // Make entire tile green when completed
-    // this.mesh.material.diffuseColor = new Color3(0, 1, 0);
-    // this.mesh.material.emissiveColor = new Color3(0, 0.8, 0);
-  }
-
-  isFullyHit() {
-    return this.hitProgress >= 1 && !this.clickable;
-  }
-
-  hasScored() {
-    return this.scored;
   }
 
   updateAge(deltaTime) {
