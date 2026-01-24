@@ -1,14 +1,13 @@
 import {
   MeshBuilder,
-  StandardMaterial,
   Color3,
   Vector3,
 } from "@babylonjs/core";
+import { SPHERE_RADIUS, HEIGHT_OFFSET } from "./config.js";
 
 // Tile configuration
 
 const COLUMN_POSITIONS = [-2.25, -0.75, 0.75, 2.25]; // 4 columns
-const SPHERE_RADIUS = 300;
 
 export class Tile {
   constructor(column, spawnTheta, scene, ground) {
@@ -92,18 +91,27 @@ export class Tile {
   }
 
   createMesh(column, spawnTheta) {
-    const mesh = MeshBuilder.CreatePlane(
+    // Create yellow outline (no fill) using lines
+    const halfWidth = this.TILE_WIDTH / 2;
+    const halfDepth = this.TILE_DEPTH / 2;
+
+    // Define the 4 corners of the rectangle, closing the loop
+    const points = [
+      new Vector3(-halfWidth, -halfDepth, 0),
+      new Vector3(halfWidth, -halfDepth, 0),
+      new Vector3(halfWidth, halfDepth, 0),
+      new Vector3(-halfWidth, halfDepth, 0),
+      new Vector3(-halfWidth, -halfDepth, 0), // Close the loop
+    ];
+
+    const mesh = MeshBuilder.CreateLines(
       "tile",
-      { width: this.TILE_WIDTH, height: this.TILE_DEPTH },
+      { points: points },
       this.scene
     );
 
-    const material = new StandardMaterial("tileMaterial", this.scene);
-    material.diffuseColor = new Color3(0.3, 0.5, 0.9); // Bright blue for visibility
-    material.emissiveColor = new Color3(0.1, 0.2, 0.4); // Slight glow
-    material.specularColor = new Color3(0.5, 0.5, 0.5);
-    material.backFaceCulling = false;
-    mesh.material = material;
+    // Yellow color for the outline
+    mesh.color = new Color3(1, 1, 0);
 
     // Position tile on sphere surface using spherical coordinates
     // Theta is 90 degrees (PI/2) ahead of player, measured from sphere's rotation
@@ -116,7 +124,8 @@ export class Tile {
 
     // Spherical coordinates: Y and Z on the sphere surface
     // Account for x offset by reducing the effective radius in the YZ plane
-    const effectiveRadius = Math.sqrt(SPHERE_RADIUS ** 2 - x ** 2) - 0.1;
+    // Add height offset to position tiles above the sphere surface
+    const effectiveRadius = Math.sqrt(SPHERE_RADIUS ** 2 - x ** 2) + HEIGHT_OFFSET;
     const y = effectiveRadius * Math.sin(theta);
     const z = effectiveRadius * Math.cos(theta);
     // Position relative to sphere center (sphere is centered at origin)

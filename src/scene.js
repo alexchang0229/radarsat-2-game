@@ -8,9 +8,10 @@ import {
   Color3,
   MeshBuilder,
   StandardMaterial,
-  Texture,
-  ParticleSystem
+  Texture
 } from '@babylonjs/core';
+import earthTextureUrl from './Earth.jpg';
+
 
 export function createScene(canvas) {
   // Create engine and scene
@@ -55,11 +56,12 @@ function createTrack(scene) {
 
   // Position sphere so the top surface is at y = -0.5
   ground.position.y = -sphereRadius - 0.5;
+  const earthTexture = new Texture(earthTextureUrl, scene);
 
   const groundMaterial = new StandardMaterial('groundMaterial', scene);
-  groundMaterial.diffuseColor = new Color3(0.2, 0.2, 0.2);
-  groundMaterial.specularColor = new Color3(0, 0, 0);
-  groundMaterial.wireframe = true; // Show wireframe to emphasize sphere shape
+  groundMaterial.diffuseTexture = earthTexture;
+  groundMaterial.specularColor = new Color3(0.1, 0.1, 0.1);
+  groundMaterial.emissiveColor = new Color3(0.05, 0.05, 0.05); // Slight glow
   ground.material = groundMaterial;
 
   // Lane dividers (between the 4 columns)

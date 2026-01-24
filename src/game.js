@@ -7,6 +7,7 @@ import {
 import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
 import { TileSpawner } from "./tile.js";
 import { TrailSpawner } from "./trail.js";
+import { HEIGHT_OFFSET } from "./config.js";
 
 export class Game {
   constructor(scene, camera, engine, ground) {
@@ -61,7 +62,7 @@ export class Game {
     material.backFaceCulling = false;
     mesh.material = material;
 
-    mesh.position = new Vector3(0, 0, this.targetZPosition);
+    mesh.position = new Vector3(0, HEIGHT_OFFSET, this.targetZPosition);
     mesh.rotation.x = Math.PI / 2; // Rotate to lie flat
     return mesh;
   }

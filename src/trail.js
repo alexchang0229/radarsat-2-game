@@ -4,14 +4,13 @@ import {
   Color3,
   Vector3,
 } from "@babylonjs/core";
-
-const SPHERE_RADIUS = 300;
+import { SPHERE_RADIUS, HEIGHT_OFFSET } from "./config.js";
 export const TRAIL_WIDTH = 1.6;
 export const TRAIL_HEIGHT = 0.17;
 const TILE_WIDTH = 1.5;
 
-const TRAIL_COLOR_NORMAL = new Color3(1, 0.67, 0); // Orange
-const TRAIL_EMISSIVE_NORMAL = new Color3(0.5, 0.33, 0);
+const TRAIL_COLOR_NORMAL = new Color3(1, 1, 0);
+const TRAIL_EMISSIVE_NORMAL = new Color3(0.7, 0.7, 0);
 const TRAIL_COLOR_HIT = new Color3(0, 1, 0); // Green when overlapping tile
 const TRAIL_EMISSIVE_HIT = new Color3(0, 0.8, 0);
 
@@ -42,7 +41,7 @@ export class Trail {
     mesh.material = material;
 
     // Spherical coordinates: Y and Z on the sphere surface
-    const effectiveRadius = Math.sqrt(SPHERE_RADIUS ** 2 - x ** 2);
+    const effectiveRadius = Math.sqrt(SPHERE_RADIUS ** 2 - x ** 2) + HEIGHT_OFFSET;
     const y = effectiveRadius * Math.sin(theta);
     const z = effectiveRadius * Math.cos(theta);
 
