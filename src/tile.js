@@ -3,7 +3,7 @@ import {
   Color3,
   Vector3,
 } from "@babylonjs/core";
-import { SPHERE_RADIUS, HEIGHT_OFFSET } from "./config.js";
+import { SPHERE_RADIUS, HEIGHT_OFFSET, TILE_WIDTHS, WIDTH_COLORS } from "./config.js";
 
 // Tile configuration
 
@@ -16,7 +16,9 @@ export class Tile {
     this.scene = scene;
     this.spawnTheta = spawnTheta;
     this.ground = ground;
-    this.TILE_WIDTH = 1.5;
+    // Random width index (0-3) corresponding to keys A, S, D, F
+    this.widthIndex = Math.floor(Math.random() * TILE_WIDTHS.length);
+    this.TILE_WIDTH = TILE_WIDTHS[this.widthIndex];
     // Random tile depth between 2 and 6 units
     this.TILE_DEPTH = 2 + Math.random() * 4;
     this.mesh = this.createMesh(column, spawnTheta);
@@ -110,8 +112,9 @@ export class Tile {
       this.scene
     );
 
-    // Yellow color for the outline
-    mesh.color = new Color3(1, 1, 0);
+    // Color based on width index
+    const color = WIDTH_COLORS[this.widthIndex];
+    mesh.color = new Color3(color.r, color.g, color.b);
 
     // Position tile on sphere surface using spherical coordinates
     // Theta is 90 degrees (PI/2) ahead of player, measured from sphere's rotation
@@ -149,17 +152,29 @@ export class Tile {
 }
 
 export class TileSpawner {
-  constructor(spawnInterval = 1.5, angularVelocity = 0.0167) {
+  constructor(angularVelocity = 0.0167) {
     this.currentSpawnTheta = 0;
-    this.spawnInterval = spawnInterval;
     this.angularVelocity = angularVelocity; // Radians per second (matches sphere rotation)
     this.timeSinceLastSpawn = 0;
+    this.gameTime = 0; // Track total game time for difficulty progression
+    this.startInterval = 5; // Starting spawn interval (easy)
+    this.minInterval = 1; // Minimum spawn interval (hard)
+    this.rampDuration = 120; // Time in seconds to reach minimum interval
+  }
+
+  getSpawnInterval() {
+    // Linearly interpolate from startInterval to minInterval over rampDuration
+    const progress = Math.min(this.gameTime / this.rampDuration, 1);
+    return this.startInterval - (this.startInterval - this.minInterval) * progress;
   }
 
   update(deltaTime, scene, ground) {
+    this.gameTime += deltaTime;
     this.timeSinceLastSpawn += deltaTime;
 
-    if (this.timeSinceLastSpawn >= this.spawnInterval) {
+    const currentInterval = this.getSpawnInterval();
+
+    if (this.timeSinceLastSpawn >= currentInterval) {
       this.timeSinceLastSpawn = 0;
 
       // Spawn tile at current theta position
@@ -167,7 +182,7 @@ export class TileSpawner {
 
       // Move spawn angle further ahead for next tile
       // Angular distance = angular velocity × time between spawns
-      this.currentSpawnTheta += this.angularVelocity * this.spawnInterval;
+      this.currentSpawnTheta += this.angularVelocity * currentInterval;
 
       return tile;
     }
@@ -182,5 +197,6 @@ export class TileSpawner {
   reset() {
     this.currentSpawnTheta = 0;
     this.timeSinceLastSpawn = 0;
+    this.gameTime = 0;
   }
 }

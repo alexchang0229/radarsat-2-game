@@ -39,12 +39,20 @@ export class InputHandler {
       }
     };
 
-    // Keyboard for spacebar hold detection
+    // Keyboard for spacebar hold detection and width switching
     window.addEventListener('keydown', (event) => {
       if (event.code === 'Space' && !this.spacebarHeld) {
         event.preventDefault();
         this.spacebarHeld = true;
         this.game.onHitStart();
+      }
+      // A, S, D keys to switch target zone width (indices 0, 1, 2)
+      if (event.code === 'KeyA') {
+        this.game.setTargetWidthIndex(0);
+      } else if (event.code === 'KeyS') {
+        this.game.setTargetWidthIndex(1);
+      } else if (event.code === 'KeyD') {
+        this.game.setTargetWidthIndex(2);
       }
     });
 

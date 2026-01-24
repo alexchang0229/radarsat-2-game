@@ -87,3 +87,45 @@ canvas {
 #restart:active {
   transform: scale(0.95);
 }
+
+#legend {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  transition: transform 0.1s;
+}
+
+.legend-item.active {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.legend-item .key {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  width: 24px;
+  text-align: center;
+}
+
+.legend-item .color-box {
+  width: 30px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.legend-item[data-index="0"] .color-box { background: #ff3333; }
+.legend-item[data-index="1"] .color-box { background: #3388ff; }
+.legend-item[data-index="2"] .color-box { background: #33ff4d; }

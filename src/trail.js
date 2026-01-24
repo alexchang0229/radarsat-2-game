@@ -4,10 +4,8 @@ import {
   Color3,
   Vector3,
 } from "@babylonjs/core";
-import { SPHERE_RADIUS, HEIGHT_OFFSET } from "./config.js";
-export const TRAIL_WIDTH = 1.6;
+import { SPHERE_RADIUS, HEIGHT_OFFSET, TILE_WIDTHS } from "./config.js";
 export const TRAIL_HEIGHT = 0.17;
-const TILE_WIDTH = 1.5;
 
 const TRAIL_COLOR_NORMAL = new Color3(1, 1, 0);
 const TRAIL_EMISSIVE_NORMAL = new Color3(0.7, 0.7, 0);
@@ -15,11 +13,13 @@ const TRAIL_COLOR_HIT = new Color3(0, 1, 0); // Green when overlapping tile
 const TRAIL_EMISSIVE_HIT = new Color3(0, 0.8, 0);
 
 export class Trail {
-  constructor(x, theta, scene, ground) {
+  constructor(x, theta, scene, ground, widthIndex) {
     this.scene = scene;
     this.ground = ground;
     this.age = 0;
     this.x = x; // Store x position for overlap checking
+    this.widthIndex = widthIndex; // Store width index for matching
+    this.width = TILE_WIDTHS[widthIndex];
     this.mesh = this.createMesh(x, theta);
     this.highlightMesh = null;
     this.isHighlighted = false;
@@ -28,7 +28,7 @@ export class Trail {
   createMesh(x, theta) {
     const mesh = MeshBuilder.CreatePlane(
       "trail",
-      { width: TRAIL_WIDTH, height: TRAIL_HEIGHT },
+      { width: this.width, height: TRAIL_HEIGHT },
       this.scene
     );
 
@@ -58,15 +58,15 @@ export class Trail {
     return mesh;
   }
 
-  setHighlighted(tileX) {
+  setHighlighted(tileX, tileWidth) {
     if (this.isHighlighted) return;
     this.isHighlighted = true;
 
     // Calculate the overlap region
-    const trailLeft = this.x - TRAIL_WIDTH / 2;
-    const trailRight = this.x + TRAIL_WIDTH / 2;
-    const tileLeft = tileX - TILE_WIDTH / 2;
-    const tileRight = tileX + TILE_WIDTH / 2;
+    const trailLeft = this.x - this.width / 2;
+    const trailRight = this.x + this.width / 2;
+    const tileLeft = tileX - tileWidth / 2;
+    const tileRight = tileX + tileWidth / 2;
 
     // Find intersection
     const overlapLeft = Math.max(trailLeft, tileLeft);
@@ -116,12 +116,12 @@ export class TrailSpawner {
     this.trails = [];
   }
 
-  createTrail(x, groundRotation, scene, ground) {
+  createTrail(x, groundRotation, scene, ground, widthIndex) {
     // Calculate theta based on current ground rotation
     // 90 degrees from current rotation is where the target zone is
     const xOffset = -0.3
     const theta = groundRotation + Math.PI / 2;
-    const trail = new Trail(x + xOffset, theta, scene, ground);
+    const trail = new Trail(x + xOffset, theta, scene, ground, widthIndex);
     this.trails.push(trail);
     return trail;
   }
@@ -139,6 +139,9 @@ export class TrailSpawner {
         for (const tile of tiles) {
           if (!tile.clickable) continue;
 
+          // Only count coverage if trail width matches tile width
+          if (trail.widthIndex !== tile.widthIndex) continue;
+
           const tilePos = tile.mesh.getAbsolutePosition();
           const xDist = Math.abs(trailPos.x - tilePos.x);
           const bounds = tile.getZBounds();
@@ -147,12 +150,12 @@ export class TrailSpawner {
           const trailInTile = trailPos.z >= bounds.back && trailPos.z <= bounds.front;
 
           // Check X overlap: two rectangles overlap if distance < sum of half-widths
-          const xOverlap = xDist < (TRAIL_WIDTH + TILE_WIDTH) / 2;
+          const xOverlap = xDist < (trail.width + tile.TILE_WIDTH) / 2;
 
           if (trailInTile && xOverlap) {
-            trail.setHighlighted(tilePos.x);
+            trail.setHighlighted(tilePos.x, tile.TILE_WIDTH);
             // Add this trail's coverage to the tile
-            tile.addTrailCoverage(trail.x, TRAIL_WIDTH, TRAIL_HEIGHT);
+            tile.addTrailCoverage(trail.x, trail.width, TRAIL_HEIGHT);
             break;
           }
         }

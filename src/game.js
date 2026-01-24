@@ -7,7 +7,7 @@ import {
 import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
 import { TileSpawner } from "./tile.js";
 import { TrailSpawner } from "./trail.js";
-import { HEIGHT_OFFSET } from "./config.js";
+import { HEIGHT_OFFSET, TILE_WIDTHS, WIDTH_COLORS } from "./config.js";
 
 export class Game {
   constructor(scene, camera, engine, ground) {
@@ -24,15 +24,18 @@ export class Game {
 
     // Game state
     this.tiles = [];
-    this.spawner = new TileSpawner(1.5, this.angularVelocity);
+    this.spawner = new TileSpawner(this.angularVelocity);
     this.trailSpawner = new TrailSpawner();
     this.score = 0;
     this.gameOver = false;
     this.isHitting = false; // Track if spacebar is held
 
+    // Target zone width tracking
+    this.targetWidthIndex = 0; // Default to first width (key A)
+    this.targetWidth = TILE_WIDTHS[this.targetWidthIndex];
+
     // Create target zone
     this.targetZone = this.createTargetZone();
-    this.targetZPosition = 6; // Z position of target zone near bottom
 
     // UI elements
     this.scoreElement = document.getElementById("score");
@@ -45,24 +48,30 @@ export class Game {
     // GUI for percentage flashes
     this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
     this.activeFlashes = []; // Track active flash animations
+
+    // Legend items for highlighting
+    this.legendItems = document.querySelectorAll('.legend-item');
+    this.updateLegendHighlight();
   }
 
   createTargetZone() {
-    // Create a thin rectangular target zone (same width as tiles)
+    // Create a thin rectangular target zone with current width
     const mesh = MeshBuilder.CreatePlane(
       "targetZone",
-      { width: 1.5, height: 0.3 },
+      { width: this.targetWidth, height: 0.3 },
       this.scene
     );
 
+    // Color based on current width index
+    const color = WIDTH_COLORS[this.targetWidthIndex];
     const material = new StandardMaterial("targetZoneMaterial", this.scene);
-    material.diffuseColor = new Color3(1, 0.67, 0); // 0xffaa00 orange
-    material.emissiveColor = new Color3(0.5, 0.33, 0); // Orange glow
+    material.diffuseColor = new Color3(color.r, color.g, color.b);
+    material.emissiveColor = new Color3(color.r * 0.5, color.g * 0.5, color.b * 0.5);
     material.alpha = 0.7;
     material.backFaceCulling = false;
     mesh.material = material;
 
-    mesh.position = new Vector3(0, HEIGHT_OFFSET, this.targetZPosition);
+    mesh.position = new Vector3(0, HEIGHT_OFFSET, 0);
     mesh.rotation.x = Math.PI / 2; // Rotate to lie flat
     return mesh;
   }
@@ -82,7 +91,7 @@ export class Game {
 
     // If spacebar is held, create trails
     if (this.isHitting) {
-      this.trailSpawner.createTrail(this.targetZone.position.x, this.ground.rotation.x, this.scene, this.ground);
+      this.trailSpawner.createTrail(this.targetZone.position.x, this.ground.rotation.x, this.scene, this.ground, this.targetWidthIndex);
     }
 
     // Update trails (removes old ones, highlights overlapping with tiles, adds coverage)
@@ -133,9 +142,10 @@ export class Game {
 
   onHitEnd() {
     this.isHitting = false;
-    // Reset target zone color
-    this.targetZone.material.diffuseColor = new Color3(1, 0.67, 0);
-    this.targetZone.material.emissiveColor = new Color3(0.5, 0.33, 0);
+    // Reset target zone to its width color
+    const color = WIDTH_COLORS[this.targetWidthIndex];
+    this.targetZone.material.diffuseColor = new Color3(color.r, color.g, color.b);
+    this.targetZone.material.emissiveColor = new Color3(color.r * 0.5, color.g * 0.5, color.b * 0.5);
   }
 
   showPercentageFlash(tile, percent) {
@@ -224,10 +234,13 @@ export class Game {
     this.updateScore();
     this.gameOverElement.classList.add("hidden");
 
-    // Reset target zone position and color
+    // Reset target zone width, position and color
+    this.targetWidthIndex = 0;
+    this.targetWidth = TILE_WIDTHS[0];
+    this.targetZone.dispose();
+    this.targetZone = this.createTargetZone();
     this.targetZone.position.x = 0;
-    this.targetZone.material.diffuseColor = new Color3(1, 0.67, 0);
-    this.targetZone.material.emissiveColor = new Color3(0.5, 0.33, 0);
+    this.updateLegendHighlight();
 
     // Reset sphere rotation
     this.ground.rotation.x = 0;
@@ -239,5 +252,40 @@ export class Game {
 
   getTargetZone() {
     return this.targetZone;
+  }
+
+  setTargetWidthIndex(index) {
+    if (index < 0 || index >= TILE_WIDTHS.length) return;
+    this.targetWidthIndex = index;
+    this.targetWidth = TILE_WIDTHS[index];
+
+    // Recreate target zone mesh with new width
+    const oldX = this.targetZone.position.x;
+    this.targetZone.dispose();
+    this.targetZone = this.createTargetZone();
+    this.targetZone.position.x = oldX;
+
+    // If currently hitting, keep the red color
+    if (this.isHitting) {
+      this.targetZone.material.diffuseColor = new Color3(1, 0, 0);
+      this.targetZone.material.emissiveColor = new Color3(0.8, 0, 0);
+    }
+
+    // Update legend highlight
+    this.updateLegendHighlight();
+  }
+
+  updateLegendHighlight() {
+    this.legendItems.forEach((item, i) => {
+      if (i === this.targetWidthIndex) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+
+  getTargetWidthIndex() {
+    return this.targetWidthIndex;
   }
 }
