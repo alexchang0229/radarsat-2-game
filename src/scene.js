@@ -10,6 +10,7 @@ import {
   StandardMaterial,
   Texture,
   SceneLoader,
+  GlowLayer,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/OBJ';
 import earthTextureUrl from './Earth.jpg';
@@ -51,7 +52,50 @@ function createTrack(scene) {
   groundMaterial.diffuseColor = new Color3(5, 5, 5);
   ground.material = groundMaterial;
 
+  // Add atmospheric haze around the globe
+  createAtmosphere(scene, ground, sphereRadius);
+
   return { ground, earthTexture };
+}
+
+function createAtmosphere(scene, ground, sphereRadius) {
+  // Create a slightly larger sphere for the atmosphere
+  const atmosphereRadius = sphereRadius * 1.01;
+  const atmosphere = MeshBuilder.CreateSphere('atmosphere', {
+    diameter: atmosphereRadius * 2,
+    segments: 64
+  }, scene);
+  atmosphere.position.y = ground.position.y;
+
+  // Atmosphere material - bluish glow with transparency
+  const atmosphereMaterial = new StandardMaterial('atmosphereMaterial', scene);
+  atmosphereMaterial.diffuseColor = new Color3(0.3, 0.5, 0.9);
+  atmosphereMaterial.emissiveColor = new Color3(0.1, 0.2, 0.4);
+  atmosphereMaterial.alpha = 0.15;
+  atmosphereMaterial.backFaceCulling = true;
+  atmosphereMaterial.disableLighting = true;
+  atmosphere.material = atmosphereMaterial;
+
+  // Create outer haze layer for more depth
+  const outerHaze = MeshBuilder.CreateSphere('outerHaze', {
+    diameter: sphereRadius * 1.08,
+    segments: 32
+  }, scene);
+  outerHaze.position.y = ground.position.y;
+
+  const outerHazeMaterial = new StandardMaterial('outerHazeMaterial', scene);
+  outerHazeMaterial.diffuseColor = new Color3(0.2, 0.4, 0.8);
+  outerHazeMaterial.emissiveColor = new Color3(0.05, 0.1, 0.2);
+  outerHazeMaterial.alpha = 0.08;
+  outerHazeMaterial.backFaceCulling = true;
+  outerHazeMaterial.disableLighting = true;
+  outerHaze.material = outerHazeMaterial;
+
+  // Add glow effect to enhance the atmosphere
+  const glowLayer = new GlowLayer('atmosphereGlow', scene);
+  glowLayer.intensity = 0.5;
+  glowLayer.addIncludedOnlyMesh(atmosphere);
+  glowLayer.addIncludedOnlyMesh(outerHaze);
 }
 
 function createStarfield(scene) {
