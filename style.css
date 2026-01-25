@@ -39,6 +39,20 @@ canvas {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
+#lives {
+  position: absolute;
+  bottom: 20px;
+  left: 140px;
+  color: #f8f8f8;
+  font-size: 24px;
+  font-weight: bold;
+  padding: 10px 15px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #a8a8a8;
+  border-radius: 8px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
 #gameOver {
   position: absolute;
   top: 50%;
@@ -126,6 +140,14 @@ canvas {
   border-radius: 3px;
 }
 
-.legend-item[data-index="0"] .color-box { background: #ff3333; }
-.legend-item[data-index="1"] .color-box { background: #3388ff; }
-.legend-item[data-index="2"] .color-box { background: #33ff4d; }
+.legend-item[data-index="0"] .color-box {
+  background: #ff3333;
+}
+
+.legend-item[data-index="1"] .color-box {
+  background: #3388ff;
+}
+
+.legend-item[data-index="2"] .color-box {
+  background: #33ff4d;
+}

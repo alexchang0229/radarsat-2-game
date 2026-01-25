@@ -27,8 +27,9 @@ export class Game {
     this.spawner = new TileSpawner(this.angularVelocity);
     this.trailSpawner = new TrailSpawner();
     this.score = 0;
+    this.lives = 3;
     this.gameOver = false;
-    this.isHitting = false; // Track if spacebar is held
+    this.isHitting = false;
 
     // Target zone width tracking
     this.targetWidthIndex = 0; // Default to first width (key A)
@@ -39,6 +40,7 @@ export class Game {
 
     // UI elements
     this.scoreElement = document.getElementById("score");
+    this.livesElement = document.getElementById("lives");
     this.gameOverElement = document.getElementById("gameOver");
     this.finalScoreElement = document.getElementById("finalScore");
     this.restartButton = document.getElementById("restart");
@@ -117,13 +119,18 @@ export class Game {
 
       // Check if tile just passed the target zone
       if (tile.checkPassedTarget()) {
-        // Tile just passed - show percentage flash
         const percent = tile.getCoveragePercent();
         this.showPercentageFlash(tile, percent);
-
-        // Add to score based on coverage
         this.score += Math.round(percent);
         this.updateScore();
+
+        if (percent < 50) {
+          this.lives--;
+          this.updateLives();
+          if (this.lives <= 0) {
+            this.triggerGameOver();
+          }
+        }
       }
 
       // Remove tiles after they've rotated 30 degrees (based on age and rotation rate)
@@ -162,6 +169,15 @@ export class Game {
 
   showPercentageFlash(tile, percent) {
     const tilePos = tile.mesh.getAbsolutePosition();
+    const screenPos = Vector3.Project(
+      tilePos,
+      this.scene.getTransformMatrix(),
+      this.scene.getTransformMatrix(),
+      this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight())
+    );
+    const left = screenPos.x - this.engine.getRenderWidth() / 2;
+    const top = screenPos.y - this.engine.getRenderHeight() / 2;
+
     const textBlock = new TextBlock();
     textBlock.text = `${Math.round(percent)}%`;
     textBlock.color = percent >= 80 ? "lime" : percent >= 50 ? "yellow" : "red";
@@ -169,18 +185,24 @@ export class Game {
     textBlock.fontWeight = "bold";
     textBlock.outlineWidth = 2;
     textBlock.outlineColor = "black";
+    textBlock.left = left;
+    textBlock.top = top;
     this.guiTexture.addControl(textBlock);
-
-    const screenPos = Vector3.Project(
-      tilePos,
-      this.scene.getTransformMatrix(),
-      this.scene.getTransformMatrix(),
-      this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight())
-    );
-    textBlock.left = screenPos.x - this.engine.getRenderWidth() / 2;
-    textBlock.top = screenPos.y - this.engine.getRenderHeight() / 2;
-
     this.activeFlashes.push({ textBlock, age: 0, duration: 1.0 });
+
+    if (percent < 50) {
+      const lossText = new TextBlock();
+      lossText.text = "DATA LOSS +1";
+      lossText.color = "#ff4444";
+      lossText.fontSize = 28;
+      lossText.fontWeight = "bold";
+      lossText.outlineWidth = 2;
+      lossText.outlineColor = "black";
+      lossText.left = left;
+      lossText.top = top + 50;
+      this.guiTexture.addControl(lossText);
+      this.activeFlashes.push({ textBlock: lossText, age: 0, duration: 1.5 });
+    }
   }
 
   updateFlashes(deltaTime) {
@@ -201,6 +223,16 @@ export class Game {
     this.scoreElement.textContent = `Score: ${this.score}`;
   }
 
+  updateLives() {
+    this.livesElement.textContent = `Data Loss Reports: ${3 - this.lives}/3`;
+  }
+
+  triggerGameOver() {
+    this.gameOver = true;
+    this.finalScoreElement.textContent = this.score;
+    this.gameOverElement.classList.remove("hidden");
+  }
+
   restart() {
     // Remove all tiles from scene
     this.tiles.forEach((tile) => {
@@ -216,9 +248,11 @@ export class Game {
 
     // Reset game state
     this.score = 0;
+    this.lives = 3;
     this.gameOver = false;
     this.isHitting = false;
     this.updateScore();
+    this.updateLives();
     this.gameOverElement.classList.add("hidden");
 
     // Reset target zone width, position and color
