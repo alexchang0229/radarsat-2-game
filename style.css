@@ -66,7 +66,10 @@ canvas {
   pointer-events: all;
 }
 
-#gameOver.hidden {
+#gameOver.hidden,
+#startMenu.hidden,
+#infoPanel.hidden,
+#hud.hidden {
   display: none;
 }
 
@@ -81,7 +84,11 @@ canvas {
   margin-bottom: 30px;
 }
 
-#restart {
+#restart,
+#gameOverInfo {
+  display: block;
+  width: 200px;
+  margin: 10px auto;
   background: #16213e;
   color: white;
   border: 2px solid #00ff00;
@@ -92,13 +99,15 @@ canvas {
   transition: all 0.3s;
 }
 
-#restart:hover {
+#restart:hover,
+#gameOverInfo:hover {
   background: #00ff00;
   color: #16213e;
   transform: scale(1.05);
 }
 
-#restart:active {
+#restart:active,
+#gameOverInfo:active {
   transform: scale(0.95);
 }
 
@@ -150,4 +159,80 @@ canvas {
 
 .legend-item[data-index="2"] .color-box {
   background: #33ff4d;
+}
+
+#startMenu,
+#infoPanel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(26, 26, 46, 0.95);
+  padding: 40px 60px;
+  border-radius: 10px;
+  text-align: center;
+  color: white;
+  pointer-events: all;
+}
+
+#startMenu h1 {
+  font-size: 48px;
+  margin-bottom: 10px;
+  color: #00aaff;
+}
+
+#startMenu .subtitle {
+  font-size: 18px;
+  color: #aaa;
+  margin-bottom: 30px;
+}
+
+#startMenu button,
+#infoPanel button {
+  display: block;
+  width: 200px;
+  margin: 10px auto;
+  background: #16213e;
+  color: white;
+  border: 2px solid #00aaff;
+  padding: 15px 40px;
+  font-size: 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+#startMenu button:hover,
+#infoPanel button:hover {
+  background: #00aaff;
+  color: #16213e;
+  transform: scale(1.05);
+}
+
+#startMenu button:active,
+#infoPanel button:active {
+  transform: scale(0.95);
+}
+
+#infoPanel h2 {
+  font-size: 36px;
+  margin-bottom: 20px;
+  color: #00aaff;
+}
+
+#infoPanel p {
+  font-size: 16px;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+#infoPanel hr {
+  border: none;
+  border-top: 1px solid #444;
+  margin: 20px 0;
+}
+
+#infoPanel .author {
+  color: #888;
+  font-style: italic;
 }

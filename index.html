@@ -10,17 +10,35 @@
 
 <body>
   <div id="ui">
-    <div id="score">Score: 0</div>
-    <div id="lives">Data Loss Reports: 0/3</div>
-    <div id="legend">
-      <div class="legend-item" data-index="0"><span class="key">A</span><span class="color-box"></span></div>
-      <div class="legend-item" data-index="1"><span class="key">S</span><span class="color-box"></span></div>
-      <div class="legend-item" data-index="2"><span class="key">D</span><span class="color-box"></span></div>
+    <div id="startMenu">
+      <h1>RADARSAT-2</h1>
+      <p class="subtitle">Satellite Data Collection Game</p>
+      <button id="startGame">Start Game</button>
+      <button id="showInfo">About</button>
+    </div>
+    <div id="infoPanel" class="hidden">
+      <h2>About</h2>
+      <p>A game inspired by RADARSAT-2, Canada's commercial radar satellite.</p>
+      <p>Use your mouse to aim the radar beam and hold spacebar to collect data from the tiles.</p>
+      <p>Press A, S, D to change beam width.</p>
+      <hr>
+      <p class="author">Created by Alex</p>
+      <button id="closeInfo">Back</button>
+    </div>
+    <div id="hud" class="hidden">
+      <div id="score">Score: 0</div>
+      <div id="lives">Data Loss Reports: 0/3</div>
+      <div id="legend">
+        <div class="legend-item" data-index="0"><span class="key">A</span><span class="color-box"></span></div>
+        <div class="legend-item" data-index="1"><span class="key">S</span><span class="color-box"></span></div>
+        <div class="legend-item" data-index="2"><span class="key">D</span><span class="color-box"></span></div>
+      </div>
     </div>
     <div id="gameOver" class="hidden">
       <h2>Game Over!</h2>
       <p>Final Score: <span id="finalScore">0</span></p>
       <button id="restart">Restart</button>
+      <button id="gameOverInfo">About</button>
     </div>
   </div>
   <script type="module" src="/src/main.js"></script>

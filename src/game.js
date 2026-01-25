@@ -32,6 +32,7 @@ export class Game {
     this.lives = 3;
     this.gameOver = false;
     this.isHitting = false;
+    this.paused = false;
 
     // Target zone width tracking
     this.targetWidthIndex = 0; // Default to first width (key A)
@@ -47,6 +48,7 @@ export class Game {
     this.gameOverElement = document.getElementById("gameOver");
     this.finalScoreElement = document.getElementById("finalScore");
     this.restartButton = document.getElementById("restart");
+    this.hudElement = document.getElementById("hud");
 
     this.restartButton.addEventListener("click", () => this.restart());
 
@@ -121,16 +123,17 @@ export class Game {
   }
 
   update() {
-    if (this.gameOver) return;
     const deltaTime = this.engine.getDeltaTime() / 1000; // Convert ms to seconds
 
-    // Rotate the sphere to bring tiles forward (player flying toward tiles)
-    this.ground.rotation.x += this.angularVelocity * deltaTime;
-
-    // Rotate the Earth texture
+    // Rotate the Earth texture even when paused/game over (for menu ambiance)
     if (this.earthTexture) {
       this.earthTexture.uOffset += EARTH_TEXTURE_ROTATE_SPEED * deltaTime;
     }
+
+    this.ground.rotation.x += this.angularVelocity * deltaTime;
+
+    if (this.gameOver || this.paused) return;
+
 
     // Spawn new tiles
     const newTile = this.spawner.update(deltaTime, this.scene, this.ground);
@@ -274,6 +277,7 @@ export class Game {
     this.gameOver = true;
     this.finalScoreElement.textContent = this.score;
     this.gameOverElement.classList.remove("hidden");
+    this.setTargetVisible(false);
   }
 
   restart() {
@@ -294,9 +298,11 @@ export class Game {
     this.lives = 3;
     this.gameOver = false;
     this.isHitting = false;
+    this.paused = false;
     this.updateScore();
     this.updateLives();
     this.gameOverElement.classList.add("hidden");
+    this.hudElement.classList.remove("hidden");
 
     // Reset target zone width, position and color
     this.targetWidthIndex = 0;
@@ -309,6 +315,9 @@ export class Game {
     this.beamLines.leftLine.dispose();
     this.beamLines.rightLine.dispose();
     this.beamLines = this.createBeamLines();
+
+    // Show target zone and beam lines
+    this.setTargetVisible(true);
 
     this.updateLegendHighlight();
 
@@ -356,5 +365,20 @@ export class Game {
 
   getTargetWidthIndex() {
     return this.targetWidthIndex;
+  }
+
+  setPaused(paused) {
+    this.paused = paused;
+  }
+
+  setTargetVisible(visible) {
+    this.targetZone.setEnabled(visible);
+    this.beamLines.leftLine.setEnabled(visible);
+    this.beamLines.rightLine.setEnabled(visible);
+  }
+
+  startGame() {
+    this.spawner.syncToRotation(this.ground.rotation.x);
+    this.setPaused(false);
   }
 }

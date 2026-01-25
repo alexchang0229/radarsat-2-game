@@ -150,4 +150,8 @@ export class TileSpawner {
     this.timeSinceLastSpawn = 0;
     this.gameTime = 0;
   }
+
+  syncToRotation(groundRotationX) {
+    this.currentSpawnTheta = groundRotationX;
+  }
 }
