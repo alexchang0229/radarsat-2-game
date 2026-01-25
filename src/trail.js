@@ -5,7 +5,7 @@ import {
   Vector3,
 } from "@babylonjs/core";
 import { SPHERE_RADIUS, HEIGHT_OFFSET, TILE_WIDTHS } from "./config.js";
-export const TRAIL_HEIGHT = 0.17;
+export const TRAIL_HEIGHT = 0.12;
 
 const TRAIL_COLOR_NORMAL = new Color3(1, 1, 0);
 const TRAIL_EMISSIVE_NORMAL = new Color3(0.7, 0.7, 0);
@@ -19,7 +19,7 @@ export class Trail {
     this.age = 0;
     this.x = x; // Store x position for overlap checking
     this.widthIndex = widthIndex; // Store width index for matching
-    this.width = TILE_WIDTHS[widthIndex];
+    this.width = TILE_WIDTHS[widthIndex] * 1.1;
     this.mesh = this.createMesh(x, theta);
     this.highlightMesh = null;
     this.isHighlighted = false;
@@ -107,7 +107,8 @@ export class TrailSpawner {
     if (!this.isSpawning || this.lastSpawnRotation === null) return;
 
     const xOffset = -0.3;
-    const angularSpacing = (TRAIL_HEIGHT * 0.8) / (SPHERE_RADIUS + HEIGHT_OFFSET);
+    // Use full trail height for spacing to prevent overlap and double-counting coverage
+    const angularSpacing = TRAIL_HEIGHT / (SPHERE_RADIUS + HEIGHT_OFFSET);
     const trailsToSpawn = Math.floor((groundRotation - this.lastSpawnRotation) / angularSpacing);
 
     for (let i = 0; i < trailsToSpawn; i++) {

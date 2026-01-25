@@ -111,17 +111,59 @@ export class TileSpawner {
     this.startInterval = 5; // Starting spawn interval (easy)
     this.minInterval = 1; // Minimum spawn interval (hard)
     this.rampDuration = 120; // Time in seconds to reach minimum interval
+
+    // Rest period configuration
+    this.restInterval = 2.5; // Slower interval during rest
+    this.intenseDuration = 30; // Seconds at minInterval before rest
+    this.restDuration = 15; // Seconds of rest period
+    this.timeAtMinInterval = 0; // Track time spent at minimum interval
+    this.isResting = false; // Whether currently in rest period
+    this.restTimeRemaining = 0; // Time left in current rest period
   }
 
   getSpawnInterval() {
-    // Linearly interpolate from startInterval to minInterval over rampDuration
-    const progress = Math.min(this.gameTime / this.rampDuration, 1);
-    return this.startInterval - (this.startInterval - this.minInterval) * progress;
+    // Check if we've reached minimum interval (ramp complete)
+    const rampComplete = this.gameTime >= this.rampDuration;
+
+    if (!rampComplete) {
+      // Still ramping up difficulty
+      const progress = this.gameTime / this.rampDuration;
+      return this.startInterval - (this.startInterval - this.minInterval) * progress;
+    }
+
+    // At minimum interval - handle rest cycle
+    if (this.isResting) {
+      return this.restInterval;
+    }
+
+    return this.minInterval;
+  }
+
+  updateRestCycle(deltaTime) {
+    // Only start tracking rest cycle after ramp is complete
+    if (this.gameTime < this.rampDuration) return;
+
+    if (this.isResting) {
+      this.restTimeRemaining -= deltaTime;
+      if (this.restTimeRemaining <= 0) {
+        // Rest period over, back to intense
+        this.isResting = false;
+        this.timeAtMinInterval = 0;
+      }
+    } else {
+      this.timeAtMinInterval += deltaTime;
+      if (this.timeAtMinInterval >= this.intenseDuration) {
+        // Start rest period
+        this.isResting = true;
+        this.restTimeRemaining = this.restDuration;
+      }
+    }
   }
 
   update(deltaTime, scene, ground) {
     this.gameTime += deltaTime;
     this.timeSinceLastSpawn += deltaTime;
+    this.updateRestCycle(deltaTime);
 
     const currentInterval = this.getSpawnInterval();
 
@@ -149,6 +191,9 @@ export class TileSpawner {
     this.currentSpawnTheta = 0;
     this.timeSinceLastSpawn = 0;
     this.gameTime = 0;
+    this.timeAtMinInterval = 0;
+    this.isResting = false;
+    this.restTimeRemaining = 0;
   }
 
   syncToRotation(groundRotationX) {

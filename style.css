@@ -236,3 +236,14 @@ canvas {
   color: #888;
   font-style: italic;
 }
+
+#infoPanel a {
+  color: #00aaff;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+#infoPanel a:hover {
+  color: #66ccff;
+  text-decoration: underline;
+}

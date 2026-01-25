@@ -4,25 +4,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RADARSAT-2</title>
+  <title>RADARSAT-2: The game</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
   <div id="ui">
     <div id="startMenu">
-      <h1>RADARSAT-2</h1>
-      <p class="subtitle">Satellite Data Collection Game</p>
+      <h1>RADARSAT-2: The game</h1>
       <button id="startGame">Start Game</button>
       <button id="showInfo">About</button>
     </div>
     <div id="infoPanel" class="hidden">
       <h2>About</h2>
-      <p>A game inspired by RADARSAT-2, Canada's commercial radar satellite.</p>
-      <p>Use your mouse to aim the radar beam and hold spacebar to collect data from the tiles.</p>
+      <p>A game inspired by RADARSAT-2.</p>
+      <p>Use your mouse to aim the radar beam and hold spacebar to collect acquisitions.</p>
       <p>Press A, S, D to change beam width.</p>
+      <p>An acquisition less than 50% collected results in a dataloss, 3 datalosses is game over.</p>
+      <p>This game is fun personal project and not associated with MDA Space or the Canadian Space Agency</p>
+      <a href="https://www.asc-csa.gc.ca/eng/satellites/radarsat2/about.asp" target="_blank">Learn more about
+        RADARSAT-2</a>
       <hr>
-      <p class="author">Created by Alex</p>
+      <p class="author">Created by Alex Chang</p>
+      <a href="https://www.linkedin.com/in/alexyuchang/" target="_blank">Send me your high scores</a>
       <button id="closeInfo">Back</button>
     </div>
     <div id="hud" class="hidden">
