@@ -44,11 +44,16 @@ export class Game {
 
     // UI elements
     this.scoreElement = document.getElementById("score");
+    this.highScoreElement = document.getElementById("highScore");
     this.livesElement = document.getElementById("lives");
     this.gameOverElement = document.getElementById("gameOver");
     this.finalScoreElement = document.getElementById("finalScore");
+    this.finalHighScoreElement = document.getElementById("finalHighScore");
     this.restartButton = document.getElementById("restart");
     this.hudElement = document.getElementById("hud");
+
+    // Session high score
+    this.highScore = 0;
 
     this.restartButton.addEventListener("click", () => this.restart());
 
@@ -198,9 +203,10 @@ export class Game {
     this.isHitting = true;
     // Start trail spawning at current position
     this.trailSpawner.startSpawning(this.targetZone.position.x, this.targetWidthIndex, this.ground.rotation.x);
-    // Change target zone to red while hitting
-    this.targetZone.material.diffuseColor = new Color3(1, 0, 0);
-    this.targetZone.material.emissiveColor = new Color3(0.8, 0, 0);
+    // Brighten target zone color while hitting (same hue, more intense)
+    const color = WIDTH_COLORS[this.targetWidthIndex];
+    this.targetZone.material.diffuseColor = new Color3(color.r, color.g, color.b);
+    this.targetZone.material.emissiveColor = new Color3(color.r, color.g, color.b);
   }
 
   onHitEnd() {
@@ -267,6 +273,10 @@ export class Game {
 
   updateScore() {
     this.scoreElement.textContent = `Score: ${this.score}`;
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      this.highScoreElement.textContent = `High Score: ${this.highScore}`;
+    }
   }
 
   updateLives() {
@@ -276,6 +286,7 @@ export class Game {
   triggerGameOver() {
     this.gameOver = true;
     this.finalScoreElement.textContent = this.score;
+    this.finalHighScoreElement.textContent = this.highScore;
     this.gameOverElement.classList.remove("hidden");
     this.setTargetVisible(false);
   }
@@ -335,6 +346,7 @@ export class Game {
 
   setTargetWidthIndex(index) {
     if (index < 0 || index >= TILE_WIDTHS.length) return;
+    if (this.isHitting) return; // Cannot switch beams while hitting
     this.targetWidthIndex = index;
     this.targetWidth = TILE_WIDTHS[index];
 
@@ -343,12 +355,6 @@ export class Game {
     this.targetZone.dispose();
     this.targetZone = this.createTargetZone();
     this.targetZone.position.x = oldX;
-
-    // If currently hitting, keep the red color
-    if (this.isHitting) {
-      this.targetZone.material.diffuseColor = new Color3(1, 0, 0);
-      this.targetZone.material.emissiveColor = new Color3(0.8, 0, 0);
-    }
 
     // Update beam lines for new width
     this.updateBeamLines();

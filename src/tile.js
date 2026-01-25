@@ -113,9 +113,9 @@ export class TileSpawner {
     this.rampDuration = 120; // Time in seconds to reach minimum interval
 
     // Rest period configuration
-    this.restInterval = 2.5; // Slower interval during rest
+    this.restInterval = 2; // Slower interval during rest
     this.intenseDuration = 30; // Seconds at minInterval before rest
-    this.restDuration = 15; // Seconds of rest period
+    this.restDuration = 10; // Seconds of rest period
     this.timeAtMinInterval = 0; // Track time spent at minimum interval
     this.isResting = false; // Whether currently in rest period
     this.restTimeRemaining = 0; // Time left in current rest period

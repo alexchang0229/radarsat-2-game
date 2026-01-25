@@ -32,8 +32,8 @@ export async function createScene(canvas) {
   const directionalLight = new DirectionalLight('directional', new Vector3(-1, -0.1, 0), scene);
   directionalLight.intensity = 1.5;
 
-  createStarfield(scene);
   const { ground, earthTexture } = createTrack(scene);
+  createStarfield(scene, ground);
   loadR2Model(scene);
 
   window.addEventListener('resize', () => engine.resize());
@@ -98,7 +98,7 @@ function createAtmosphere(scene, ground, sphereRadius) {
   glowLayer.addIncludedOnlyMesh(outerHaze);
 }
 
-function createStarfield(scene) {
+function createStarfield(scene, ground) {
   const starSphere = MeshBuilder.CreateSphere('starfield', { diameter: 2000, segments: 32 }, scene);
   const starMaterial = new StandardMaterial('starMaterial', scene);
   starMaterial.diffuseColor = new Color3(0, 0, 0);
@@ -107,6 +107,7 @@ function createStarfield(scene) {
   starMaterial.disableLighting = true;
   starSphere.material = starMaterial;
   starSphere.infiniteDistance = true;
+  starSphere.parent = ground;
 
   for (let i = 0; i < 2000; i++) {
     const theta = Math.random() * Math.PI * 2;
@@ -117,6 +118,7 @@ function createStarfield(scene) {
 
     const star = MeshBuilder.CreateSphere(`star${i}`, { diameter: Math.random() * 2.5 + 0.8, segments: 6 }, scene);
     star.position.set(x, y, z);
+    star.parent = ground;
 
     const mat = new StandardMaterial(`starMat${i}`, scene);
     const brightness = Math.random() * 0.3 + 0.7;
