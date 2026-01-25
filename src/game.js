@@ -4,6 +4,8 @@ import {
   Color3,
   Vector3,
 } from "@babylonjs/core";
+
+const SATELLITE_POS = new Vector3(0, 6, 0);
 import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
 import { TileSpawner } from "./tile.js";
 import { TrailSpawner } from "./trail.js";
@@ -35,8 +37,9 @@ export class Game {
     this.targetWidthIndex = 0; // Default to first width (key A)
     this.targetWidth = TILE_WIDTHS[this.targetWidthIndex];
 
-    // Create target zone
+    // Create target zone and beam lines
     this.targetZone = this.createTargetZone();
+    this.beamLines = this.createBeamLines();
 
     // UI elements
     this.scoreElement = document.getElementById("score");
@@ -76,6 +79,45 @@ export class Game {
     mesh.position = new Vector3(0, HEIGHT_OFFSET, 0);
     mesh.rotation.x = Math.PI / 2; // Rotate to lie flat
     return mesh;
+  }
+
+  createBeamLines() {
+    const halfWidth = this.targetWidth / 2;
+    const leftStart = new Vector3(this.targetZone.position.x - halfWidth, HEIGHT_OFFSET, 0);
+    const rightStart = new Vector3(this.targetZone.position.x + halfWidth, HEIGHT_OFFSET, 0);
+
+    const leftLine = MeshBuilder.CreateLines("beamLeft", {
+      points: [leftStart, SATELLITE_POS],
+      updatable: true,
+    }, this.scene);
+    leftLine.color = new Color3(1, 1, 1);
+    leftLine.alpha = 0.1
+
+    const rightLine = MeshBuilder.CreateLines("beamRight", {
+      points: [rightStart, SATELLITE_POS],
+      updatable: true,
+    }, this.scene);
+    rightLine.color = new Color3(1, 1, 1);
+    rightLine.alpha = 0.1
+
+    return { leftLine, rightLine };
+  }
+
+  updateBeamLines() {
+    if (!this.beamLines) return;
+    const halfWidth = this.targetWidth / 2;
+    const leftStart = new Vector3(this.targetZone.position.x - halfWidth, HEIGHT_OFFSET, 0);
+    const rightStart = new Vector3(this.targetZone.position.x + halfWidth, HEIGHT_OFFSET, 0);
+
+    this.beamLines.leftLine = MeshBuilder.CreateLines("beamLeft", {
+      points: [leftStart, SATELLITE_POS],
+      instance: this.beamLines.leftLine,
+    });
+
+    this.beamLines.rightLine = MeshBuilder.CreateLines("beamRight", {
+      points: [rightStart, SATELLITE_POS],
+      instance: this.beamLines.rightLine,
+    });
   }
 
   update() {
@@ -146,6 +188,7 @@ export class Game {
     // Move target zone horizontally based on mouse position
     // Clamp X position to reasonable bounds
     this.targetZone.position.x = Math.max(-3, Math.min(3, x));
+    this.updateBeamLines();
   }
 
   onHitStart() {
@@ -261,6 +304,12 @@ export class Game {
     this.targetZone.dispose();
     this.targetZone = this.createTargetZone();
     this.targetZone.position.x = 0;
+
+    // Recreate beam lines
+    this.beamLines.leftLine.dispose();
+    this.beamLines.rightLine.dispose();
+    this.beamLines = this.createBeamLines();
+
     this.updateLegendHighlight();
 
     // Reset sphere rotation
@@ -291,6 +340,9 @@ export class Game {
       this.targetZone.material.diffuseColor = new Color3(1, 0, 0);
       this.targetZone.material.emissiveColor = new Color3(0.8, 0, 0);
     }
+
+    // Update beam lines for new width
+    this.updateBeamLines();
 
     // Update legend highlight
     this.updateLegendHighlight();
