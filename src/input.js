@@ -1,4 +1,4 @@
-import { Vector3, Plane, Ray } from '@babylonjs/core';
+import { Vector3, Plane } from '@babylonjs/core';
 
 export class InputHandler {
   constructor(camera, game, scene) {
@@ -19,12 +19,8 @@ export class InputHandler {
   }
 
   setupInputListeners() {
-    // Mouse/touch move for target zone positioning
-    this.scene.onPointerMove = (evt) => {
-      this.updateTargetZone(evt.clientX, evt.clientY);
-    };
+    this.scene.onPointerMove = (evt) => this.updateTargetZone(evt.clientX, evt.clientY);
 
-    // Touch start/end for hold detection
     this.scene.onPointerDown = (evt) => {
       if (evt.pointerType === 'touch') {
         this.spacebarHeld = true;
@@ -39,21 +35,14 @@ export class InputHandler {
       }
     };
 
-    // Keyboard for spacebar hold detection and width switching
     window.addEventListener('keydown', (event) => {
       if (event.code === 'Space' && !this.spacebarHeld) {
         event.preventDefault();
         this.spacebarHeld = true;
         this.game.onHitStart();
       }
-      // A, S, D keys to switch target zone width (indices 0, 1, 2)
-      if (event.code === 'KeyA') {
-        this.game.setTargetWidthIndex(0);
-      } else if (event.code === 'KeyS') {
-        this.game.setTargetWidthIndex(1);
-      } else if (event.code === 'KeyD') {
-        this.game.setTargetWidthIndex(2);
-      }
+      const widthKeys = { KeyA: 0, KeyS: 1, KeyD: 2 };
+      if (event.code in widthKeys) this.game.setTargetWidthIndex(widthKeys[event.code]);
     });
 
     window.addEventListener('keyup', (event) => {
@@ -65,26 +54,11 @@ export class InputHandler {
     });
   }
 
-  isSpacebarHeld() {
-    return this.spacebarHeld;
-  }
-
   updateTargetZone(clientX, clientY) {
-    // Create a ray from the camera through the screen position
-    const ray = this.scene.createPickingRay(
-      clientX,
-      clientY,
-      null,
-      this.camera
-    );
-
-    // Find intersection with the plane at target zone's Z position
+    const ray = this.scene.createPickingRay(clientX, clientY, null, this.camera);
     const distance = ray.intersectsPlane(this.plane);
-
     if (distance !== null) {
-      const intersectPoint = ray.origin.add(ray.direction.scale(distance));
-      // Move target zone to the X position of the intersection
-      this.game.moveTargetZone(intersectPoint.x);
+      this.game.moveTargetZone(ray.origin.add(ray.direction.scale(distance)).x);
     }
   }
 }

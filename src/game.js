@@ -21,7 +21,6 @@ export class Game {
     this.tileSpeed = 10; // Units per second (linear velocity)
     this.sphereRadius = 300; // Sphere radius
     this.angularVelocity = this.tileSpeed / this.sphereRadius; // Radians per second
-    this.bottomThreshold = 8; // Z position where tiles are "missed"
 
     // Game state
     this.tiles = [];
@@ -163,8 +162,6 @@ export class Game {
 
   showPercentageFlash(tile, percent) {
     const tilePos = tile.mesh.getAbsolutePosition();
-
-    // Create text block for the percentage
     const textBlock = new TextBlock();
     textBlock.text = `${Math.round(percent)}%`;
     textBlock.color = percent >= 80 ? "lime" : percent >= 50 ? "yellow" : "red";
@@ -172,44 +169,27 @@ export class Game {
     textBlock.fontWeight = "bold";
     textBlock.outlineWidth = 2;
     textBlock.outlineColor = "black";
-
     this.guiTexture.addControl(textBlock);
 
-    // Convert 3D position to screen position
     const screenPos = Vector3.Project(
       tilePos,
       this.scene.getTransformMatrix(),
       this.scene.getTransformMatrix(),
-      this.camera.viewport.toGlobal(
-        this.engine.getRenderWidth(),
-        this.engine.getRenderHeight()
-      )
+      this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight())
     );
-
-    // Position the text (GUI uses -1 to 1 coordinates from center)
     textBlock.left = screenPos.x - this.engine.getRenderWidth() / 2;
     textBlock.top = screenPos.y - this.engine.getRenderHeight() / 2;
 
-    // Track this flash for animation
-    this.activeFlashes.push({
-      textBlock,
-      age: 0,
-      duration: 1.0, // Flash lasts 1 second
-      startY: textBlock.top
-    });
+    this.activeFlashes.push({ textBlock, age: 0, duration: 1.0 });
   }
 
   updateFlashes(deltaTime) {
     for (let i = this.activeFlashes.length - 1; i >= 0; i--) {
       const flash = this.activeFlashes[i];
       flash.age += deltaTime;
-
-      // Animate: float upward and fade out
       const progress = flash.age / flash.duration;
-      flash.textBlock.top = flash.startY// Float up 50 pixels
-      flash.textBlock.alpha = 1 - progress; // Fade out
+      flash.textBlock.alpha = 1 - progress;
 
-      // Remove when done
       if (flash.age >= flash.duration) {
         this.guiTexture.removeControl(flash.textBlock);
         this.activeFlashes.splice(i, 1);
@@ -219,12 +199,6 @@ export class Game {
 
   updateScore() {
     this.scoreElement.textContent = `Score: ${this.score}`;
-  }
-
-  onMiss() {
-    // this.gameOver = true;
-    // this.finalScoreElement.textContent = this.score;
-    // this.gameOverElement.classList.remove("hidden");
   }
 
   restart() {
@@ -290,11 +264,7 @@ export class Game {
 
   updateLegendHighlight() {
     this.legendItems.forEach((item, i) => {
-      if (i === this.targetWidthIndex) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
+      item.classList.toggle('active', i === this.targetWidthIndex);
     });
   }
 
