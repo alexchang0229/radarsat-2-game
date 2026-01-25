@@ -135,7 +135,7 @@ function createStarfield(scene) {
 
 async function loadR2Model(scene) {
   try {
-    const result = await SceneLoader.ImportMeshAsync('', '/', 'R2.obj', scene);
+    const result = await SceneLoader.ImportMeshAsync('', import.meta.env.BASE_URL, 'R2.obj', scene);
     if (result.meshes.length === 0) return;
 
     const root = result.meshes[0];
