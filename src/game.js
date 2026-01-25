@@ -7,14 +7,15 @@ import {
 import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
 import { TileSpawner } from "./tile.js";
 import { TrailSpawner } from "./trail.js";
-import { HEIGHT_OFFSET, TILE_WIDTHS, WIDTH_COLORS } from "./config.js";
+import { HEIGHT_OFFSET, TILE_WIDTHS, WIDTH_COLORS, EARTH_TEXTURE_ROTATE_SPEED } from "./config.js";
 
 export class Game {
-  constructor(scene, camera, engine, ground) {
+  constructor(scene, camera, engine, ground, earthTexture) {
     this.scene = scene;
     this.camera = camera;
     this.engine = engine;
     this.ground = ground;
+    this.earthTexture = earthTexture;
 
     // Game parameters
     this.tileSpeed = 10; // Units per second (linear velocity)
@@ -83,16 +84,24 @@ export class Game {
     // Rotate the sphere to bring tiles forward (player flying toward tiles)
     this.ground.rotation.x += this.angularVelocity * deltaTime;
 
+    // Rotate the Earth texture
+    if (this.earthTexture) {
+      this.earthTexture.uOffset += EARTH_TEXTURE_ROTATE_SPEED * deltaTime;
+    }
+
     // Spawn new tiles
     const newTile = this.spawner.update(deltaTime, this.scene, this.ground);
     if (newTile) {
       this.tiles.push(newTile);
     }
 
-    // If spacebar is held, create trails
+    // Update trail spawn position if currently spawning
     if (this.isHitting) {
-      this.trailSpawner.createTrail(this.targetZone.position.x, this.ground.rotation.x, this.scene, this.ground, this.targetWidthIndex);
+      this.trailSpawner.updateSpawnPosition(this.targetZone.position.x, this.targetWidthIndex);
     }
+
+    // Spawn trails based on rotation (fills gaps regardless of frame rate)
+    this.trailSpawner.spawnTrails(this.ground.rotation.x, this.scene, this.ground);
 
     // Update trails (removes old ones, highlights overlapping with tiles, adds coverage)
     this.trailSpawner.update(deltaTime, this.angularVelocity, this.tiles);
@@ -135,6 +144,8 @@ export class Game {
 
   onHitStart() {
     this.isHitting = true;
+    // Start trail spawning at current position
+    this.trailSpawner.startSpawning(this.targetZone.position.x, this.targetWidthIndex, this.ground.rotation.x);
     // Change target zone to red while hitting
     this.targetZone.material.diffuseColor = new Color3(1, 0, 0);
     this.targetZone.material.emissiveColor = new Color3(0.8, 0, 0);
@@ -142,6 +153,8 @@ export class Game {
 
   onHitEnd() {
     this.isHitting = false;
+    // Stop trail spawning
+    this.trailSpawner.stopSpawning();
     // Reset target zone to its width color
     const color = WIDTH_COLORS[this.targetWidthIndex];
     this.targetZone.material.diffuseColor = new Color3(color.r, color.g, color.b);

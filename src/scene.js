@@ -8,12 +8,14 @@ import {
   Color3,
   MeshBuilder,
   StandardMaterial,
-  Texture
+  Texture,
+  SceneLoader,
 } from '@babylonjs/core';
+import '@babylonjs/loaders/OBJ';
 import earthTextureUrl from './Earth.jpg';
 
 
-export function createScene(canvas) {
+export async function createScene(canvas) {
   // Create engine and scene
   const engine = new Engine(canvas, true);
   const scene = new Scene(engine);
@@ -22,28 +24,32 @@ export function createScene(canvas) {
   // Camera - positioned to look down the track for vanishing point effect
   const camera = new FreeCamera('camera', new Vector3(10, 10, 10), scene);
   camera.setTarget(new Vector3(0, 0, -5));
-  camera.fov = 1.0; // ~50 degrees in radians
+  camera.fov = 0.9; // ~50 degrees in radians
 
   // Lighting
   const ambientLight = new HemisphericLight('ambient', new Vector3(0, 1, 0), scene);
-  ambientLight.intensity = 0.6;
+  ambientLight.intensity = 0.02; // Very low ambient for darker shadows
+  ambientLight.groundColor = new Color3(0, 0, 0); // No ground bounce light
 
-  const directionalLight = new DirectionalLight('directional', new Vector3(-1, -1, -1), scene);
-  directionalLight.position = new Vector3(5, 5, 5);
-  directionalLight.intensity = 0.4;
+  // Light direction points FROM the light source, so (-1, -0.5, 0.5) means light comes from upper-right
+  const directionalLight = new DirectionalLight('directional', new Vector3(-1, -.1, 0), scene);
+  directionalLight.intensity = 1.5; // Brighter sun for more contrast
 
   // Create starfield skybox
   createStarfield(scene);
 
   // Track visualization
-  const ground = createTrack(scene);
+  const { ground, earthTexture } = createTrack(scene);
+
+  // Load RADARSAT-2 satellite model and apply rotation
+  loadR2Model(scene);
 
   // Handle window resize
   window.addEventListener('resize', () => {
     engine.resize();
   });
 
-  return { scene, camera, engine, ground };
+  return { scene, camera, engine, ground, earthTexture };
 }
 
 function createTrack(scene) {
@@ -60,46 +66,10 @@ function createTrack(scene) {
 
   const groundMaterial = new StandardMaterial('groundMaterial', scene);
   groundMaterial.diffuseTexture = earthTexture;
-  groundMaterial.specularColor = new Color3(0.1, 0.1, 0.1);
-  groundMaterial.emissiveColor = new Color3(0.05, 0.05, 0.05); // Slight glow
+  groundMaterial.diffuseColor = new Color3(5, 5, 5); // Boost lit areas
   ground.material = groundMaterial;
 
-  // Lane dividers (between the 4 columns)
-  const dividerMaterial = new StandardMaterial('dividerMaterial', scene);
-  dividerMaterial.diffuseColor = new Color3(0.27, 0.27, 0.27);
-  dividerMaterial.alpha = 0.5;
-
-  const dividerPositions = [-1.5, 0, 1.5]; // Between 4 columns
-
-  // Create curved dividers using cylinders positioned on the sphere surface
-  dividerPositions.forEach(x => {
-    // Create a tall thin cylinder for each divider
-    const divider = MeshBuilder.CreateCylinder('divider', {
-      height: 100,
-      diameter: 0.05,
-      tessellation: 8
-    }, scene);
-
-    // Calculate the Y position on the sphere surface at this X position
-    // For a sphere: x² + y² + z² = r²
-    // Position divider along the track centerline (z = -25)
-    const zPos = -25;
-    const distFromCenter = Math.sqrt(x * x + zPos * zPos);
-    const yOffset = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - distFromCenter * distFromCenter));
-
-    // Parent divider to ground sphere first so position is in local coordinates
-    divider.parent = ground;
-
-    // Set position in sphere's local coordinate system
-    divider.position.set(x, yOffset - 50, zPos);
-    divider.material = dividerMaterial;
-
-    // Rotate divider to align with sphere surface
-    const angle = Math.atan2(x, sphereRadius);
-    divider.rotation.z = -angle;
-  });
-
-  return ground;
+  return { ground, earthTexture };
 }
 
 function createStarfield(scene) {
@@ -157,5 +127,47 @@ function createStarfield(scene) {
     starMatInstance.disableLighting = true;
     star.material = starMatInstance;
   }
+}
+
+async function loadR2Model(scene) {
+  try {
+    const result = await SceneLoader.ImportMeshAsync('', '/', 'R2.obj', scene);
+    const meshes = result.meshes;
+
+    if (meshes.length > 0) {
+      const root = meshes[0];
+      const basePosition = new Vector3(0, 6, 0); // Store the starting position
+
+      root.position = basePosition.clone();
+      // Position the satellite near the camera view
+      root.position = new Vector3(0, 6, 0);
+      // Scale the model (adjust as needed based on model size)
+      root.scaling = new Vector3(0.0001, 0.0001, 0.0001);
+      // Apply rotation and bake it into vertices so normals stay correct for lighting
+      root.rotation.x = -Math.PI / 2 + 30 * Math.PI / 180;
+      root.rotation.y = Math.PI / 2;
+
+      let time = 0;
+      const amplitude = 0.12; // How far up/down it moves
+      const rotationAmplitude = 0.0001
+      const frequency = 0.015; // How fast it bobs
+
+      scene.onBeforeRenderObservable.add(() => {
+        time += frequency;
+        // Apply sine wave to the Y axis relative to the base position
+        root.position.y = basePosition.y + Math.sin(time) * amplitude;
+
+        root.rotation.z += Math.cos(time * 0.5) * rotationAmplitude;
+      });
+      meshes.forEach(mesh => {
+        if (mesh.material) {
+          mesh.createNormals(true);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Failed to load R2 model:', error);
+  }
+  return null;
 }
 

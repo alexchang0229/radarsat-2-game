@@ -3,8 +3,11 @@
 export const SPHERE_RADIUS = 300;
 export const HEIGHT_OFFSET = 0.1; // Height offset above sphere surface for tiles, trails, and target zone
 
+// Earth texture rotation speed (radians per second, positive = rotate east)
+export const EARTH_TEXTURE_ROTATE_SPEED = 0.0005;
+
 // 3 different tile widths corresponding to keys A, S, D
-export const TILE_WIDTHS = [0.8, 1.2, 1.6];
+export const TILE_WIDTHS = [0.8, 1.5, 2.3];;
 
 // Colors for each width index (A=red, S=blue, D=green)
 export const WIDTH_COLORS = [

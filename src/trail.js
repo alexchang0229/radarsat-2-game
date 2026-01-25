@@ -114,6 +114,58 @@ export class Trail {
 export class TrailSpawner {
   constructor() {
     this.trails = [];
+    this.lastSpawnRotation = null; // Track last spawn position
+    this.isSpawning = false;
+    this.spawnX = 0;
+    this.spawnWidthIndex = 0;
+  }
+
+  // Start continuous trail spawning
+  startSpawning(x, widthIndex, groundRotation) {
+    this.isSpawning = true;
+    this.spawnX = x;
+    this.spawnWidthIndex = widthIndex;
+    this.lastSpawnRotation = groundRotation;
+  }
+
+  // Update spawn position (for mouse movement while spawning)
+  updateSpawnPosition(x, widthIndex) {
+    this.spawnX = x;
+    this.spawnWidthIndex = widthIndex;
+  }
+
+  // Stop spawning
+  stopSpawning() {
+    this.isSpawning = false;
+    this.lastSpawnRotation = null;
+  }
+
+  // Spawn trails at fixed intervals based on rotation, filling any gaps
+  spawnTrails(groundRotation, scene, ground) {
+    if (!this.isSpawning || this.lastSpawnRotation === null) return;
+
+    const xOffset = -0.3;
+    // Calculate angular spacing to avoid too much overlap
+    // TRAIL_HEIGHT is the trail size, we want slight overlap for continuity
+    // Angular spacing = arc length / radius, where arc length ≈ TRAIL_HEIGHT * 0.8 (20% overlap)
+    const effectiveRadius = SPHERE_RADIUS + HEIGHT_OFFSET;
+    const angularSpacing = (TRAIL_HEIGHT * 0.8) / effectiveRadius;
+
+    // Calculate how many trails to spawn to fill the gap
+    const rotationDelta = groundRotation - this.lastSpawnRotation;
+    const trailsToSpawn = Math.floor(rotationDelta / angularSpacing);
+
+    for (let i = 0; i < trailsToSpawn; i++) {
+      const spawnRotation = this.lastSpawnRotation + (i + 1) * angularSpacing;
+      const theta = spawnRotation + Math.PI / 2;
+      const trail = new Trail(this.spawnX + xOffset, theta, scene, ground, this.spawnWidthIndex);
+      this.trails.push(trail);
+    }
+
+    // Update last spawn rotation
+    if (trailsToSpawn > 0) {
+      this.lastSpawnRotation += trailsToSpawn * angularSpacing;
+    }
   }
 
   createTrail(x, groundRotation, scene, ground, widthIndex) {
@@ -175,5 +227,7 @@ export class TrailSpawner {
       trail.dispose();
     }
     this.trails = [];
+    this.lastSpawnRotation = null;
+    this.isSpawning = false;
   }
 }
