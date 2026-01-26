@@ -23,7 +23,8 @@ export async function createScene(canvas) {
 
   const camera = new FreeCamera('camera', new Vector3(10, 10, 10), scene);
   camera.setTarget(new Vector3(0, 0, -5));
-  camera.fov = 0.9;
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  camera.fov = isMobile ? 1.5 : 0.9;
 
   const ambientLight = new HemisphericLight('ambient', new Vector3(0, 1, 0), scene);
   ambientLight.intensity = 0.02;

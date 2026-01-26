@@ -44,7 +44,6 @@ export class Game {
 
     // UI elements
     this.scoreElement = document.getElementById("score");
-    this.highScoreElement = document.getElementById("highScore");
     this.livesElement = document.getElementById("lives");
     this.gameOverElement = document.getElementById("gameOver");
     this.finalScoreElement = document.getElementById("finalScore");
@@ -61,8 +60,14 @@ export class Game {
     this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
     this.activeFlashes = []; // Track active flash animations
 
-    // Legend items for highlighting
+    // Legend items for highlighting and clicking
     this.legendItems = document.querySelectorAll('.legend-item');
+    this.legendItems.forEach((item) => {
+      item.addEventListener('click', () => {
+        const index = parseInt(item.dataset.index);
+        this.setTargetWidthIndex(index);
+      });
+    });
     this.updateLegendHighlight();
   }
 
@@ -275,7 +280,6 @@ export class Game {
     this.scoreElement.textContent = `Score: ${this.score}`;
     if (this.score > this.highScore) {
       this.highScore = this.score;
-      this.highScoreElement.textContent = `High Score: ${this.highScore}`;
     }
   }
 

@@ -21,18 +21,14 @@ export class InputHandler {
   setupInputListeners() {
     this.scene.onPointerMove = (evt) => this.updateTargetZone(evt.clientX, evt.clientY);
 
-    this.scene.onPointerDown = (evt) => {
-      if (evt.pointerType === 'touch') {
-        this.spacebarHeld = true;
-        this.game.onHitStart();
-      }
+    this.scene.onPointerDown = () => {
+      this.spacebarHeld = true;
+      this.game.onHitStart();
     };
 
-    this.scene.onPointerUp = (evt) => {
-      if (evt.pointerType === 'touch') {
-        this.spacebarHeld = false;
-        this.game.onHitEnd();
-      }
+    this.scene.onPointerUp = () => {
+      this.spacebarHeld = false;
+      this.game.onHitEnd();
     };
 
     window.addEventListener('keydown', (event) => {
