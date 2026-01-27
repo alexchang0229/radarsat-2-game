@@ -359,36 +359,6 @@ canvas {
   color: #00aaff;
 }
 
-#leaderboardTabs {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-#leaderboardTabs .tab {
-  background: #0a0a1a;
-  color: #888;
-  border: 2px solid #333;
-  padding: 8px 24px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-#leaderboardTabs .tab:first-child {
-  border-radius: 5px 0 0 5px;
-}
-
-#leaderboardTabs .tab:last-child {
-  border-radius: 0 5px 5px 0;
-}
-
-#leaderboardTabs .tab.active {
-  background: #16213e;
-  color: white;
-  border-color: #00aaff;
-}
-
 #leaderboardList {
   text-align: left;
   margin-bottom: 20px;
