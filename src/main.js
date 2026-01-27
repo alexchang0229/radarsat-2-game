@@ -62,13 +62,21 @@ async function init() {
   game.setPaused(true);
   game.setTargetVisible(false);
 
-  // Game over callback — show name input instead of game over screen directly
-  game.onGameOver = (finalScore) => {
+  // Game over callback — show name input only if score qualifies for top 10
+  game.onGameOver = async (finalScore) => {
     lastSubmittedScore = null;
-    nameInputScore.textContent = finalScore;
-    playerNameInput.value = getLastPlayerName() || '';
-    nameInputPanel.classList.remove('hidden');
-    setTimeout(() => playerNameInput.focus(), 100);
+
+    const scores = await leaderboard.getTopScores(10);
+    const qualifies = scores.length < 10 || finalScore > scores[scores.length - 1].score;
+
+    if (qualifies) {
+      nameInputScore.textContent = finalScore;
+      playerNameInput.value = getLastPlayerName() || '';
+      nameInputPanel.classList.remove('hidden');
+      setTimeout(() => playerNameInput.focus(), 100);
+    } else {
+      gameOverElement.classList.remove('hidden');
+    }
   };
 
   // Submit score
@@ -108,7 +116,7 @@ async function init() {
     leaderboardList.innerHTML = '<div class="leaderboard-empty">Loading...</div>';
 
     const scores = await leaderboard.getTopScores(10);
-
+    console.log(scores)
     if (scores.length === 0) {
       leaderboardList.innerHTML =
         '<div class="leaderboard-empty">No scores yet. Play a game!</div>';

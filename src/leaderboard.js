@@ -19,7 +19,7 @@ class OnlineLeaderboard {
   async _doInit() {
     try {
       const { initializeApp } = await import('firebase/app');
-      const { getDatabase, ref, push, query, orderByChild, limitToLast, onValue } =
+      const { getDatabase, ref, push, query, orderByChild, limitToLast, get } =
         await import('firebase/database');
 
       const app = initializeApp(this.config);
@@ -29,7 +29,7 @@ class OnlineLeaderboard {
       this._query = query;
       this._orderByChild = orderByChild;
       this._limitToLast = limitToLast;
-      this._onValue = onValue;
+      this._get = get;
       this._available = true;
     } catch (err) {
       console.warn('Online leaderboard unavailable:', err);
@@ -62,29 +62,27 @@ class OnlineLeaderboard {
   async getTopScores(limit = 10) {
     if (!this._available) return [];
     try {
+
       const scoresRef = this._ref(this.db, 'scores');
       const q = this._query(
         scoresRef,
         this._orderByChild('score'),
         this._limitToLast(limit)
       );
-      return new Promise((resolve) => {
-        const unsubscribe = this._onValue(q, (snapshot) => {
-          const results = [];
-          snapshot.forEach((child) => results.push(child.val()));
-          unsubscribe();
-          // limitToLast returns ascending order; reverse for descending
-          resolve(results.reverse());
-        }, (err) => {
-          console.warn('Failed to fetch online scores:', err);
-          resolve([]);
-        });
+
+      const snapshot = await this._get(q);
+      const results = [];
+      snapshot.forEach((child) => {
+        results.push(child.val());
       });
+
+      return results.reverse(); // highest score first
     } catch (err) {
       console.warn('Failed to fetch online scores:', err);
       return [];
     }
   }
+
 }
 
 export function getLastPlayerName() {
