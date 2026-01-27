@@ -1,58 +1,6 @@
-const LOCAL_SCORES_KEY = 'radarsat2_scores';
 const LOCAL_NAME_KEY = 'radarsat2_playerName';
-const MAX_LOCAL_SCORES = 20;
 const MAX_VALID_SCORE = 50000;
 const NAME_REGEX = /^[a-zA-Z0-9 ]{1,12}$/;
-
-class LocalLeaderboard {
-  getScores() {
-    try {
-      const raw = localStorage.getItem(LOCAL_SCORES_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  addScore(name, score) {
-    const scores = this.getScores();
-    const entry = { name, score, date: new Date().toISOString() };
-    scores.push(entry);
-    scores.sort((a, b) => b.score - a.score);
-    const trimmed = scores.slice(0, MAX_LOCAL_SCORES);
-    try {
-      localStorage.setItem(LOCAL_SCORES_KEY, JSON.stringify(trimmed));
-    } catch {
-      // localStorage may be full or disabled
-    }
-    this.setLastPlayerName(name);
-    const rank = trimmed.findIndex(
-      (s) => s.name === entry.name && s.score === entry.score && s.date === entry.date
-    );
-    return { rank: rank + 1 };
-  }
-
-  getHighScore() {
-    const scores = this.getScores();
-    return scores.length > 0 ? scores[0].score : 0;
-  }
-
-  getLastPlayerName() {
-    try {
-      return localStorage.getItem(LOCAL_NAME_KEY);
-    } catch {
-      return null;
-    }
-  }
-
-  setLastPlayerName(name) {
-    try {
-      localStorage.setItem(LOCAL_NAME_KEY, name);
-    } catch {
-      // localStorage may be disabled
-    }
-  }
-}
 
 class OnlineLeaderboard {
   constructor(firebaseConfig) {
@@ -71,7 +19,7 @@ class OnlineLeaderboard {
   async _doInit() {
     try {
       const { initializeApp } = await import('firebase/app');
-      const { getDatabase, ref, push, query, orderByChild, limitToLast, get } =
+      const { getDatabase, ref, push, query, orderByChild, limitToLast, onValue } =
         await import('firebase/database');
 
       const app = initializeApp(this.config);
@@ -81,7 +29,7 @@ class OnlineLeaderboard {
       this._query = query;
       this._orderByChild = orderByChild;
       this._limitToLast = limitToLast;
-      this._get = get;
+      this._onValue = onValue;
       this._available = true;
     } catch (err) {
       console.warn('Online leaderboard unavailable:', err);
@@ -120,11 +68,18 @@ class OnlineLeaderboard {
         this._orderByChild('score'),
         this._limitToLast(limit)
       );
-      const snapshot = await this._get(q);
-      const results = [];
-      snapshot.forEach((child) => results.push(child.val()));
-      // limitToLast returns ascending order; reverse for descending
-      return results.reverse();
+      return new Promise((resolve) => {
+        const unsubscribe = this._onValue(q, (snapshot) => {
+          const results = [];
+          snapshot.forEach((child) => results.push(child.val()));
+          unsubscribe();
+          // limitToLast returns ascending order; reverse for descending
+          resolve(results.reverse());
+        }, (err) => {
+          console.warn('Failed to fetch online scores:', err);
+          resolve([]);
+        });
+      });
     } catch (err) {
       console.warn('Failed to fetch online scores:', err);
       return [];
@@ -132,14 +87,24 @@ class OnlineLeaderboard {
   }
 }
 
-export function createLeaderboard(firebaseConfig) {
-  const local = new LocalLeaderboard();
-  let online = null;
-
-  if (firebaseConfig) {
-    online = new OnlineLeaderboard(firebaseConfig);
-    online.init();
+export function getLastPlayerName() {
+  try {
+    return localStorage.getItem(LOCAL_NAME_KEY);
+  } catch {
+    return null;
   }
+}
 
-  return { local, online };
+export function setLastPlayerName(name) {
+  try {
+    localStorage.setItem(LOCAL_NAME_KEY, name);
+  } catch {
+    // localStorage may be disabled
+  }
+}
+
+export function createLeaderboard(firebaseConfig) {
+  const leaderboard = new OnlineLeaderboard(firebaseConfig);
+  leaderboard.init();
+  return leaderboard;
 }

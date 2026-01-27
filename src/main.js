@@ -1,7 +1,7 @@
 import { createScene } from './scene.js';
 import { Game } from './game.js';
 import { InputHandler } from './input.js';
-import { createLeaderboard } from './leaderboard.js';
+import { createLeaderboard, getLastPlayerName, setLastPlayerName } from './leaderboard.js';
 import { firebaseConfig } from './firebaseConfig.js';
 
 function escapeHtml(str) {
@@ -24,11 +24,11 @@ async function init() {
   // Initialize the scene (now async to wait for model loading)
   const { scene, camera, engine, ground, earthTexture } = await createScene(canvas);
 
-  // Initialize leaderboard
+  // Initialize leaderboard (global only via Firebase)
   const leaderboard = createLeaderboard(firebaseConfig);
 
   // Create game instance
-  const game = new Game(scene, camera, engine, ground, earthTexture, leaderboard);
+  const game = new Game(scene, camera, engine, ground, earthTexture);
 
   // Set up input handler
   new InputHandler(camera, game, scene);
@@ -51,13 +51,10 @@ async function init() {
   const skipScoreBtn = document.getElementById('skipScore');
   const leaderboardPanel = document.getElementById('leaderboard');
   const leaderboardList = document.getElementById('leaderboardList');
-  const tabLocal = document.getElementById('tabLocal');
-  const tabOnline = document.getElementById('tabOnline');
   const closeLeaderboardBtn = document.getElementById('closeLeaderboard');
   const showLeaderboardBtn = document.getElementById('showLeaderboard');
   const gameOverLeaderboardBtn = document.getElementById('gameOverLeaderboard');
 
-  let currentLeaderboardTab = 'local';
   let returnFromLeaderboard = 'startMenu';
   let lastSubmittedScore = null;
 
@@ -69,7 +66,7 @@ async function init() {
   game.onGameOver = (finalScore) => {
     lastSubmittedScore = null;
     nameInputScore.textContent = finalScore;
-    playerNameInput.value = leaderboard.local.getLastPlayerName() || '';
+    playerNameInput.value = getLastPlayerName() || '';
     nameInputPanel.classList.remove('hidden');
     setTimeout(() => playerNameInput.focus(), 100);
   };
@@ -77,15 +74,13 @@ async function init() {
   // Submit score
   submitScoreBtn.addEventListener('click', () => {
     const name = playerNameInput.value.trim() || 'Anonymous';
-    leaderboard.local.addScore(name, game.score);
-    if (leaderboard.online && leaderboard.online.isAvailable()) {
-      leaderboard.online.submitScore(name, game.score);
+    setLastPlayerName(name);
+    if (leaderboard.isAvailable()) {
+      leaderboard.submitScore(name, game.score);
     }
-    game.highScore = leaderboard.local.getHighScore();
-    game.finalHighScoreElement.textContent = game.highScore;
     lastSubmittedScore = { name, score: game.score };
     nameInputPanel.classList.add('hidden');
-    showLeaderboard('local', 'gameOver');
+    showLeaderboard('gameOver');
   });
 
   // Skip — go straight to game over screen
@@ -100,10 +95,8 @@ async function init() {
   });
 
   // Leaderboard display
-  function showLeaderboard(tab, returnTo) {
+  function showLeaderboard(returnTo) {
     returnFromLeaderboard = returnTo || 'startMenu';
-    currentLeaderboardTab = tab || 'local';
-    updateLeaderboardTabs();
     renderLeaderboard();
 
     startMenu.classList.add('hidden');
@@ -111,22 +104,10 @@ async function init() {
     leaderboardPanel.classList.remove('hidden');
   }
 
-  function updateLeaderboardTabs() {
-    tabLocal.classList.toggle('active', currentLeaderboardTab === 'local');
-    tabOnline.classList.toggle('active', currentLeaderboardTab === 'online');
-    tabOnline.style.display =
-      leaderboard.online && leaderboard.online.isAvailable() ? '' : 'none';
-  }
-
   async function renderLeaderboard() {
     leaderboardList.innerHTML = '<div class="leaderboard-empty">Loading...</div>';
 
-    let scores;
-    if (currentLeaderboardTab === 'online' && leaderboard.online) {
-      scores = await leaderboard.online.getTopScores(10);
-    } else {
-      scores = leaderboard.local.getScores().slice(0, 10);
-    }
+    const scores = await leaderboard.getTopScores(10);
 
     if (scores.length === 0) {
       leaderboardList.innerHTML =
@@ -150,19 +131,6 @@ async function init() {
       .join('');
   }
 
-  // Tab switching
-  tabLocal.addEventListener('click', () => {
-    currentLeaderboardTab = 'local';
-    updateLeaderboardTabs();
-    renderLeaderboard();
-  });
-
-  tabOnline.addEventListener('click', () => {
-    currentLeaderboardTab = 'online';
-    updateLeaderboardTabs();
-    renderLeaderboard();
-  });
-
   // Close leaderboard
   closeLeaderboardBtn.addEventListener('click', () => {
     leaderboardPanel.classList.add('hidden');
@@ -175,12 +143,12 @@ async function init() {
 
   // Open leaderboard from start menu
   showLeaderboardBtn.addEventListener('click', () => {
-    showLeaderboard('local', 'startMenu');
+    showLeaderboard('startMenu');
   });
 
   // Open leaderboard from game over
   gameOverLeaderboardBtn.addEventListener('click', () => {
-    showLeaderboard('local', 'gameOver');
+    showLeaderboard('gameOver');
   });
 
   // Start game
