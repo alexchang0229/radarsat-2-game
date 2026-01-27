@@ -13,6 +13,7 @@
     <div id="startMenu">
       <h1>RADARSAT-2: The game</h1>
       <button id="startGame">Start Game</button>
+      <button id="showLeaderboard">Leaderboard</button>
       <button id="showInfo">About</button>
     </div>
     <div id="infoPanel" class="hidden">
@@ -43,7 +44,27 @@
       <p>Final Score: <span id="finalScore">0</span></p>
       <p>High Score: <span id="finalHighScore">0</span></p>
       <button id="restart">Restart</button>
+      <button id="gameOverLeaderboard">Leaderboard</button>
       <button id="gameOverInfo">About</button>
+    </div>
+    <div id="nameInput" class="hidden">
+      <h2>New High Score!</h2>
+      <p>Score: <span id="nameInputScore">0</span></p>
+      <input type="text" id="playerName" placeholder="Your name" maxlength="12"
+        autocomplete="off" spellcheck="false">
+      <div id="nameInputButtons">
+        <button id="submitScore">Submit</button>
+        <button id="skipScore">Skip</button>
+      </div>
+    </div>
+    <div id="leaderboard" class="hidden">
+      <h2>Leaderboard</h2>
+      <div id="leaderboardTabs">
+        <button id="tabLocal" class="tab active">Local</button>
+        <button id="tabOnline" class="tab">Global</button>
+      </div>
+      <div id="leaderboardList"></div>
+      <button id="closeLeaderboard">Back</button>
     </div>
   </div>
   <script type="module" src="/src/main.js"></script>

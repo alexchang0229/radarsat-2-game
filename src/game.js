@@ -12,12 +12,13 @@ import { TrailSpawner } from "./trail.js";
 import { HEIGHT_OFFSET, TILE_WIDTHS, WIDTH_COLORS, EARTH_TEXTURE_ROTATE_SPEED } from "./config.js";
 
 export class Game {
-  constructor(scene, camera, engine, ground, earthTexture) {
+  constructor(scene, camera, engine, ground, earthTexture, leaderboard) {
     this.scene = scene;
     this.camera = camera;
     this.engine = engine;
     this.ground = ground;
     this.earthTexture = earthTexture;
+    this.leaderboard = leaderboard;
 
     // Game parameters
     this.tileSpeed = 10; // Units per second (linear velocity)
@@ -51,8 +52,8 @@ export class Game {
     this.restartButton = document.getElementById("restart");
     this.hudElement = document.getElementById("hud");
 
-    // Session high score
-    this.highScore = 0;
+    // Persisted high score
+    this.highScore = leaderboard ? leaderboard.local.getHighScore() : 0;
 
     this.restartButton.addEventListener("click", () => this.restart());
 
@@ -291,8 +292,13 @@ export class Game {
     this.gameOver = true;
     this.finalScoreElement.textContent = this.score;
     this.finalHighScoreElement.textContent = this.highScore;
-    this.gameOverElement.classList.remove("hidden");
     this.setTargetVisible(false);
+
+    if (this.onGameOver) {
+      this.onGameOver(this.score);
+    } else {
+      this.gameOverElement.classList.remove("hidden");
+    }
   }
 
   restart() {

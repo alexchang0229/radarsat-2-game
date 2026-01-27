@@ -69,7 +69,9 @@ canvas {
 #gameOver.hidden,
 #startMenu.hidden,
 #infoPanel.hidden,
-#hud.hidden {
+#hud.hidden,
+#nameInput.hidden,
+#leaderboard.hidden {
   display: none;
 }
 
@@ -85,7 +87,8 @@ canvas {
 }
 
 #restart,
-#gameOverInfo {
+#gameOverInfo,
+#gameOverLeaderboard {
   display: block;
   width: 200px;
   margin: 10px auto;
@@ -100,14 +103,16 @@ canvas {
 }
 
 #restart:hover,
-#gameOverInfo:hover {
+#gameOverInfo:hover,
+#gameOverLeaderboard:hover {
   background: #00ff00;
   color: #16213e;
   transform: scale(1.05);
 }
 
 #restart:active,
-#gameOverInfo:active {
+#gameOverInfo:active,
+#gameOverLeaderboard:active {
   transform: scale(0.95);
 }
 
@@ -256,4 +261,195 @@ canvas {
 #infoPanel a:hover {
   color: #66ccff;
   text-decoration: underline;
+}
+
+/* Name Input Panel */
+#nameInput {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(26, 26, 46, 0.95);
+  padding: 40px 60px;
+  border-radius: 10px;
+  text-align: center;
+  color: white;
+  pointer-events: all;
+}
+
+#nameInput h2 {
+  font-size: 36px;
+  margin-bottom: 10px;
+  color: #ffcc00;
+}
+
+#nameInput p {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+#playerName {
+  display: block;
+  width: 220px;
+  margin: 0 auto 20px;
+  padding: 10px 15px;
+  font-size: 20px;
+  text-align: center;
+  background: #0a0a1a;
+  color: white;
+  border: 2px solid #00aaff;
+  border-radius: 5px;
+  outline: none;
+  font-family: 'Arial', sans-serif;
+}
+
+#playerName:focus {
+  border-color: #ffcc00;
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+}
+
+#nameInputButtons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+#submitScore,
+#skipScore {
+  width: 120px;
+  background: #16213e;
+  color: white;
+  border: 2px solid #00aaff;
+  padding: 12px 20px;
+  font-size: 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+#submitScore:hover {
+  background: #00aaff;
+  color: #16213e;
+}
+
+#skipScore:hover {
+  background: #333;
+}
+
+/* Leaderboard Panel */
+#leaderboard {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(26, 26, 46, 0.95);
+  padding: 40px 40px;
+  border-radius: 10px;
+  text-align: center;
+  color: white;
+  pointer-events: all;
+  min-width: 340px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#leaderboard h2 {
+  font-size: 36px;
+  margin-bottom: 15px;
+  color: #00aaff;
+}
+
+#leaderboardTabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+#leaderboardTabs .tab {
+  background: #0a0a1a;
+  color: #888;
+  border: 2px solid #333;
+  padding: 8px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#leaderboardTabs .tab:first-child {
+  border-radius: 5px 0 0 5px;
+}
+
+#leaderboardTabs .tab:last-child {
+  border-radius: 0 5px 5px 0;
+}
+
+#leaderboardTabs .tab.active {
+  background: #16213e;
+  color: white;
+  border-color: #00aaff;
+}
+
+#leaderboardList {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.leaderboard-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #222;
+  font-size: 16px;
+}
+
+.leaderboard-entry.highlight {
+  background: rgba(255, 204, 0, 0.15);
+  border-left: 3px solid #ffcc00;
+}
+
+.leaderboard-rank {
+  color: #888;
+  width: 30px;
+}
+
+.leaderboard-name {
+  flex: 1;
+  color: white;
+  padding: 0 10px;
+}
+
+.leaderboard-score {
+  color: #00aaff;
+  font-weight: bold;
+}
+
+.leaderboard-empty {
+  color: #666;
+  font-style: italic;
+  padding: 20px;
+  text-align: center;
+}
+
+#closeLeaderboard {
+  display: block;
+  width: 200px;
+  margin: 10px auto;
+  background: #16213e;
+  color: white;
+  border: 2px solid #00aaff;
+  padding: 15px 40px;
+  font-size: 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+#closeLeaderboard:hover {
+  background: #00aaff;
+  color: #16213e;
+  transform: scale(1.05);
+}
+
+#closeLeaderboard:active {
+  transform: scale(0.95);
 }
