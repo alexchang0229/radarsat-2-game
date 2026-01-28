@@ -116,7 +116,6 @@ async function init() {
     leaderboardList.innerHTML = '<div class="leaderboard-empty">Loading...</div>';
 
     const scores = await leaderboard.getTopScores(10);
-    console.log(scores)
     if (scores.length === 0) {
       leaderboardList.innerHTML =
         '<div class="leaderboard-empty">No scores yet. Play a game!</div>';
