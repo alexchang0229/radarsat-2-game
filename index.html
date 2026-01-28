@@ -4,14 +4,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RADARSAT-2: The game</title>
+  <meta name="description" content="A game inspired by RADARSAT-2. Fly through space, aim your radar beam, and collect acquisitions.">
+  <meta name="keywords" content="RADARSAT-2, space, game, satellites">
+  <meta name="author" content="Alex Chang">
+
+  <meta property="og:title" content="RADARSAT-2: The Game">
+  <meta property="og:description" content="A game inspired by RADARSAT-2. Fly through space, aim your radar beam, and collect acquisitions.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="RADARSAT-2: The Game">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="RADARSAT-2: The Game">
+  <meta name="twitter:description" content="A game inspired by RADARSAT-2. Fly through space, aim your radar beam, and collect acquisitions.">
+
+  <meta name="theme-color" content="#0a0a14">
+  <link rel="canonical" href="">
+  <title>RADARSAT-2: The Game</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <div id="ui">
+  <main id="ui">
     <div id="startMenu">
-      <h1>RADARSAT-2: The game</h1>
+      <h1>RADARSAT-2: The Game</h1>
       <button id="startGame">Start Game</button>
       <button id="showLeaderboard">Leaderboard</button>
       <button id="showInfo">About</button>
@@ -22,7 +37,7 @@
       <p>Use your mouse to aim the radar beam and hold spacebar to collect acquisitions.</p>
       <p>Press A, S, D to change beam width.</p>
       <p>An acquisition less than 50% collected results in a dataloss, 3 datalosses is game over.</p>
-      <p>This game is fun personal project and not associated with MDA Space or the Canadian Space Agency</p>
+      <p>This game is a fun personal project and not associated with MDA Space or the Canadian Space Agency</p>
       <a href="https://www.asc-csa.gc.ca/eng/satellites/radarsat2/about.asp" target="_blank">Learn more about
         RADARSAT-2</a>
       <hr>
@@ -62,7 +77,7 @@
       <div id="leaderboardList"></div>
       <button id="closeLeaderboard">Back</button>
     </div>
-  </div>
+  </main>
   <script type="module" src="/src/main.js"></script>
 </body>
 
