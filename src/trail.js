@@ -12,6 +12,32 @@ const TRAIL_EMISSIVE_NORMAL = new Color3(0.7, 0.7, 0);
 const TRAIL_COLOR_HIT = new Color3(0, 1, 0); // Green when overlapping tile
 const TRAIL_EMISSIVE_HIT = new Color3(0, 0.8, 0);
 
+// Shared materials (created once, reused by all trails)
+let sharedTrailMaterial = null;
+let sharedHighlightMaterial = null;
+
+function getSharedTrailMaterial(scene) {
+  if (!sharedTrailMaterial) {
+    sharedTrailMaterial = new StandardMaterial("sharedTrailMaterial", scene);
+    sharedTrailMaterial.diffuseColor = TRAIL_COLOR_NORMAL;
+    sharedTrailMaterial.emissiveColor = TRAIL_EMISSIVE_NORMAL;
+    sharedTrailMaterial.backFaceCulling = false;
+    sharedTrailMaterial.disableDepthWrite = true;
+  }
+  return sharedTrailMaterial;
+}
+
+function getSharedHighlightMaterial(scene) {
+  if (!sharedHighlightMaterial) {
+    sharedHighlightMaterial = new StandardMaterial("sharedHighlightMaterial", scene);
+    sharedHighlightMaterial.diffuseColor = TRAIL_COLOR_HIT;
+    sharedHighlightMaterial.emissiveColor = TRAIL_EMISSIVE_HIT;
+    sharedHighlightMaterial.backFaceCulling = false;
+    sharedHighlightMaterial.disableDepthWrite = true;
+  }
+  return sharedHighlightMaterial;
+}
+
 export class Trail {
   constructor(x, theta, scene, ground, widthIndex) {
     this.scene = scene;
@@ -27,12 +53,7 @@ export class Trail {
 
   createMesh(x, theta) {
     const mesh = MeshBuilder.CreatePlane("trail", { width: this.width, height: TRAIL_HEIGHT }, this.scene);
-    const material = new StandardMaterial("trailMaterial", this.scene);
-    material.diffuseColor = TRAIL_COLOR_NORMAL.clone();
-    material.emissiveColor = TRAIL_EMISSIVE_NORMAL.clone();
-    material.backFaceCulling = false;
-    material.disableDepthWrite = true;
-    mesh.material = material;
+    mesh.material = getSharedTrailMaterial(this.scene);
 
     const effectiveRadius = Math.sqrt(SPHERE_RADIUS ** 2 - x ** 2) + HEIGHT_OFFSET;
     mesh.position = new Vector3(x, effectiveRadius * Math.sin(theta), effectiveRadius * Math.cos(theta));
@@ -52,12 +73,7 @@ export class Trail {
     if (overlapWidth <= 0) return;
 
     this.highlightMesh = MeshBuilder.CreatePlane("trailHighlight", { width: overlapWidth, height: TRAIL_HEIGHT }, this.scene);
-    const material = new StandardMaterial("trailHighlightMaterial", this.scene);
-    material.diffuseColor = TRAIL_COLOR_HIT;
-    material.emissiveColor = TRAIL_EMISSIVE_HIT;
-    material.backFaceCulling = false;
-    material.disableDepthWrite = true;
-    this.highlightMesh.material = material;
+    this.highlightMesh.material = getSharedHighlightMaterial(this.scene);
     this.highlightMesh.parent = this.mesh;
     this.highlightMesh.position = new Vector3((overlapLeft + overlapRight) / 2 - this.x, 0, 0.01);
   }
@@ -122,23 +138,40 @@ export class TrailSpawner {
   }
 
   update(deltaTime, angularVelocity, tiles) {
+    // Pre-compute tile data once per frame (avoids repeated getAbsolutePosition calls)
+    const clickableTiles = [];
+    for (const tile of tiles) {
+      if (!tile.clickable) continue;
+      const pos = tile.mesh.getAbsolutePosition();
+      const bounds = tile.getZBounds();
+      clickableTiles.push({
+        tile,
+        x: pos.x,
+        zFront: bounds.front,
+        zBack: bounds.back,
+        halfWidth: tile.TILE_WIDTH / 2,
+        widthIndex: tile.widthIndex
+      });
+    }
+
     for (let i = this.trails.length - 1; i >= 0; i--) {
       const trail = this.trails[i];
       trail.updateAge(deltaTime);
 
       if (!trail.isHighlighted) {
         const trailPos = trail.mesh.getAbsolutePosition();
-        for (const tile of tiles) {
-          if (!tile.clickable || trail.widthIndex !== tile.widthIndex) continue;
+        const trailHalfWidth = trail.width / 2;
 
-          const tilePos = tile.mesh.getAbsolutePosition();
-          const bounds = tile.getZBounds();
-          const trailInTile = trailPos.z >= bounds.back && trailPos.z <= bounds.front;
-          const xOverlap = Math.abs(trailPos.x - tilePos.x) < (trail.width + tile.TILE_WIDTH) / 2;
+        for (const tileData of clickableTiles) {
+          if (trail.widthIndex !== tileData.widthIndex) continue;
 
-          if (trailInTile && xOverlap) {
-            trail.setHighlighted(tilePos.x, tile.TILE_WIDTH);
-            tile.addTrailCoverage(trail.x, trail.width, TRAIL_HEIGHT);
+          const trailInTile = trailPos.z >= tileData.zBack && trailPos.z <= tileData.zFront;
+          if (!trailInTile) continue;
+
+          const xOverlap = Math.abs(trailPos.x - tileData.x) < (trailHalfWidth + tileData.halfWidth);
+          if (xOverlap) {
+            trail.setHighlighted(tileData.x, tileData.tile.TILE_WIDTH);
+            tileData.tile.addTrailCoverage(trail.x, trail.width, TRAIL_HEIGHT);
             break;
           }
         }

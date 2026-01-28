@@ -31,7 +31,7 @@ async function init() {
   const game = new Game(scene, camera, engine, ground, earthTexture);
 
   // Set up input handler
-  new InputHandler(camera, game, scene);
+  const inputHandler = new InputHandler(camera, game, scene);
 
   // Menu elements
   const startMenu = document.getElementById('startMenu');
@@ -187,6 +187,7 @@ async function init() {
 
   // Game loop
   engine.runRenderLoop(() => {
+    inputHandler.update(); // Process pending mouse input once per frame
     game.update();
     scene.render();
   });

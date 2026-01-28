@@ -61,6 +61,32 @@ export class Game {
     this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
     this.activeFlashes = []; // Track active flash animations
 
+    // Pre-allocate TextBlock pool for percentage flashes (avoids per-miss allocations)
+    this.flashPool = [];
+    this.lossTextPool = [];
+    const POOL_SIZE = 10;
+    for (let i = 0; i < POOL_SIZE; i++) {
+      const textBlock = new TextBlock();
+      textBlock.fontSize = 48;
+      textBlock.fontWeight = "bold";
+      textBlock.outlineWidth = 2;
+      textBlock.outlineColor = "black";
+      textBlock.isVisible = false;
+      this.guiTexture.addControl(textBlock);
+      this.flashPool.push(textBlock);
+
+      const lossText = new TextBlock();
+      lossText.text = "DATA LOSS +1";
+      lossText.color = "#ff4444";
+      lossText.fontSize = 28;
+      lossText.fontWeight = "bold";
+      lossText.outlineWidth = 2;
+      lossText.outlineColor = "black";
+      lossText.isVisible = false;
+      this.guiTexture.addControl(lossText);
+      this.lossTextPool.push(lossText);
+    }
+
     // Legend items for highlighting and clicking
     this.legendItems = document.querySelectorAll('.legend-item');
     this.legendItems.forEach((item) => {
@@ -96,39 +122,50 @@ export class Game {
 
   createBeamLines() {
     const halfWidth = this.targetWidth / 2;
-    const leftStart = new Vector3(this.targetZone.position.x - halfWidth, HEIGHT_OFFSET, 0);
-    const rightStart = new Vector3(this.targetZone.position.x + halfWidth, HEIGHT_OFFSET, 0);
+
+    // Pre-allocate point arrays for reuse
+    const leftPoints = [
+      new Vector3(this.targetZone.position.x - halfWidth, HEIGHT_OFFSET, 0),
+      SATELLITE_POS.clone()
+    ];
+    const rightPoints = [
+      new Vector3(this.targetZone.position.x + halfWidth, HEIGHT_OFFSET, 0),
+      SATELLITE_POS.clone()
+    ];
 
     const leftLine = MeshBuilder.CreateLines("beamLeft", {
-      points: [leftStart, SATELLITE_POS],
+      points: leftPoints,
       updatable: true,
     }, this.scene);
     leftLine.color = new Color3(1, 1, 1);
-    leftLine.alpha = 0.1
+    leftLine.alpha = 0.1;
 
     const rightLine = MeshBuilder.CreateLines("beamRight", {
-      points: [rightStart, SATELLITE_POS],
+      points: rightPoints,
       updatable: true,
     }, this.scene);
     rightLine.color = new Color3(1, 1, 1);
-    rightLine.alpha = 0.1
+    rightLine.alpha = 0.1;
 
-    return { leftLine, rightLine };
+    return { leftLine, rightLine, leftPoints, rightPoints };
   }
 
   updateBeamLines() {
     if (!this.beamLines) return;
     const halfWidth = this.targetWidth / 2;
-    const leftStart = new Vector3(this.targetZone.position.x - halfWidth, HEIGHT_OFFSET, 0);
-    const rightStart = new Vector3(this.targetZone.position.x + halfWidth, HEIGHT_OFFSET, 0);
 
-    this.beamLines.leftLine = MeshBuilder.CreateLines("beamLeft", {
-      points: [leftStart, SATELLITE_POS],
+    // Update pre-allocated point positions in place
+    this.beamLines.leftPoints[0].x = this.targetZone.position.x - halfWidth;
+    this.beamLines.rightPoints[0].x = this.targetZone.position.x + halfWidth;
+
+    // Update mesh geometry using instance parameter with existing points
+    MeshBuilder.CreateLines("beamLeft", {
+      points: this.beamLines.leftPoints,
       instance: this.beamLines.leftLine,
     });
 
-    this.beamLines.rightLine = MeshBuilder.CreateLines("beamRight", {
-      points: [rightStart, SATELLITE_POS],
+    MeshBuilder.CreateLines("beamRight", {
+      points: this.beamLines.rightPoints,
       instance: this.beamLines.rightLine,
     });
   }
@@ -236,30 +273,24 @@ export class Game {
     const left = screenPos.x - this.engine.getRenderWidth() / 2;
     const top = screenPos.y - this.engine.getRenderHeight() / 2;
 
-    const textBlock = new TextBlock();
+    // Get TextBlock from pool instead of creating new one
+    const textBlock = this.flashPool.find(t => !t.isVisible) || this.flashPool[0];
     textBlock.text = `${Math.round(percent)}%`;
     textBlock.color = percent >= 80 ? "lime" : percent >= 50 ? "yellow" : "red";
-    textBlock.fontSize = 48;
-    textBlock.fontWeight = "bold";
-    textBlock.outlineWidth = 2;
-    textBlock.outlineColor = "black";
     textBlock.left = left;
     textBlock.top = top;
-    this.guiTexture.addControl(textBlock);
-    this.activeFlashes.push({ textBlock, age: 0, duration: 1.0 });
+    textBlock.alpha = 1;
+    textBlock.isVisible = true;
+    this.activeFlashes.push({ textBlock, age: 0, duration: 1.0, isPooled: true });
 
     if (percent < 50) {
-      const lossText = new TextBlock();
-      lossText.text = "DATA LOSS +1";
-      lossText.color = "#ff4444";
-      lossText.fontSize = 28;
-      lossText.fontWeight = "bold";
-      lossText.outlineWidth = 2;
-      lossText.outlineColor = "black";
+      // Get loss text from pool
+      const lossText = this.lossTextPool.find(t => !t.isVisible) || this.lossTextPool[0];
       lossText.left = left;
       lossText.top = top + 50;
-      this.guiTexture.addControl(lossText);
-      this.activeFlashes.push({ textBlock: lossText, age: 0, duration: 1.5 });
+      lossText.alpha = 1;
+      lossText.isVisible = true;
+      this.activeFlashes.push({ textBlock: lossText, age: 0, duration: 1.5, isPooled: true });
     }
   }
 
@@ -271,7 +302,8 @@ export class Game {
       flash.textBlock.alpha = 1 - progress;
 
       if (flash.age >= flash.duration) {
-        this.guiTexture.removeControl(flash.textBlock);
+        // Hide pooled TextBlocks instead of removing them
+        flash.textBlock.isVisible = false;
         this.activeFlashes.splice(i, 1);
       }
     }

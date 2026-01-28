@@ -14,12 +14,25 @@ export class InputHandler {
       new Vector3(0, 0, 1)
     );
 
+    // Mouse position caching for throttled updates
+    this.pendingMouseX = 0;
+    this.pendingMouseY = 0;
+    this.mouseDirty = false;
+
+    // Pre-allocate reusable Vector3 for raycast result
+    this._rayResult = new Vector3();
+
     // Bind event handlers
     this.setupInputListeners();
   }
 
   setupInputListeners() {
-    this.scene.onPointerMove = (evt) => this.updateTargetZone(evt.clientX, evt.clientY);
+    // Cache mouse position instead of raycasting on every move event
+    this.scene.onPointerMove = (evt) => {
+      this.pendingMouseX = evt.clientX;
+      this.pendingMouseY = evt.clientY;
+      this.mouseDirty = true;
+    };
 
     this.scene.onPointerDown = () => {
       this.spacebarHeld = true;
@@ -50,11 +63,18 @@ export class InputHandler {
     });
   }
 
-  updateTargetZone(clientX, clientY) {
-    const ray = this.scene.createPickingRay(clientX, clientY, null, this.camera);
+  // Call this once per frame from the game loop
+  update() {
+    if (!this.mouseDirty) return;
+    this.mouseDirty = false;
+
+    const ray = this.scene.createPickingRay(this.pendingMouseX, this.pendingMouseY, null, this.camera);
     const distance = ray.intersectsPlane(this.plane);
     if (distance !== null) {
-      this.game.moveTargetZone(ray.origin.add(ray.direction.scale(distance)).x);
+      // Reuse Vector3 instead of creating new ones
+      ray.direction.scaleToRef(distance, this._rayResult);
+      this._rayResult.addInPlace(ray.origin);
+      this.game.moveTargetZone(this._rayResult.x);
     }
   }
 }
